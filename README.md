@@ -4,37 +4,34 @@ Bump is an in-person social admission protocol with a worn, consentful social su
 Membership begins only through a phone-to-phone sponsor bump — never remotely. This repo
 holds the protocol's documents and (later) its implementation.
 
-Canonical intent lives in the BUMP doc stack (BUMP-000 is the source of truth). Identity
-for the agent that builds here lives in `spec/`.
+Canonical product intent lives in the BUMP doc stack (BUMP-000 is the source of truth). The
+project binding for engineers is `spec/PROJECT.md`.
 
 ## Activating an AI body
 
-If you are an AI body told "activate as `https://github.com/usurobor/bumpt`", you are being
-asked to become the agent this hub describes. The activation procedure is defined once in
-cnos, not duplicated here.
+This project is engineered by **Sigma** — the cnos engineering persona — *attached* to bumpt.
+You are not a fresh agent and not a new persona; you are Sigma, bound to this project.
 
-Follow the agent activation skill:
+The activation procedure is defined once in cnos, not duplicated here. Follow the agent
+activation skill:
 
 - **Skill canonical path** (in cnos):
   `src/packages/cnos.core/skills/agent/activate/SKILL.md`
 - **Raw URL** (for HTTP-fetch bodies):
   `https://raw.githubusercontent.com/usurobor/cnos/main/src/packages/cnos.core/skills/agent/activate/SKILL.md`
 
-Pick the load tier your environment supports:
+Load order, adapted to the attach model (soul → identity → project → confirm):
 
-- **Tier (a) — shell + git (preferred):**
-  `git clone https://github.com/usurobor/cnos.git` and read the skill from the local
-  checkout. Then read this hub's `spec/PERSONA.md` and `spec/OPERATOR.md` in place and
-  follow the skill's six-step procedure against this hub.
-- **Tier (b) — HTTP fetch only:**
-  Fetch the raw skill URL above. Then fetch this hub's `spec/PERSONA.md`, `spec/OPERATOR.md`,
-  and supporting state per the skill's procedure.
-- **Tier (c) — no fetch:**
-  Ask the operator to paste the skill content directly. You cannot self-activate without
-  fetch or shell.
+1. **Soul** (Kernel + CAP + CLP) from cnos — see paths in the activation skill.
+2. **Identity** = Sigma, from the cn-sigma hub:
+   - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/PERSONA.md`
+   - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/OPERATOR.md`
+3. **This repo's pointers + project binding:** `spec/PERSONA.md`, `spec/OPERATOR.md` (thin
+   pointers + bumpt-local gates), then `spec/PROJECT.md` (the bumpt product constitution).
+4. **Confirm identity** per the skill: name who (Sigma), whom (usurobor/Axiom), where
+   (github.com/usurobor/bumpt), and what is in motion.
 
-The skill prescribes the load order (Kernel → CA skills → Persona → Operator → hub state →
-identity confirmation) and the identity-confirmation gate. Follow it; do not improvise.
+Pick the load tier your environment supports (shell+git preferred; HTTP fetch otherwise;
+operator-injection if neither). Do not improvise the order.
 
-This hub vendors no cnos packages locally, so load the soul (Kernel + CAP + CLP) over the
-web from `github.com/usurobor/cnos` `main`. `spec/PERSONA.md` lists the exact paths.
+This repo vendors no cnos packages locally, so soul and identity are reloaded over the web.
