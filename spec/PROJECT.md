@@ -53,7 +53,7 @@ Standing · Cell · Mission · Delegation.
 
 | Doc | What it is | State |
 |-----|------------|-------|
-| BUMP-000 | Protocol Inception RFC | **canonical** — Draft v0.4 (not yet in this repo) |
+| BUMP-000 | Protocol Inception RFC | **canonical** — Draft v0.4, in repo: [`BUMP-000.md`](../BUMP-000.md) |
 | BUMP-001 | PR/FAQ — public launch narrative | next deliverable; seed in BUMP-000 §18 |
 | BUMP-010 | Protocol Spec — schemas + FSM tables | pending |
 | BUMP-020 | Threat Model | required pre-launch |
