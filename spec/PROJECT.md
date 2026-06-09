@@ -1,16 +1,23 @@
 # Project binding — bumpt
 
-Version: 1.0.0
+Version: 1.1.0
 
 Changelog:
+- v1.1.0 — **interim status.** BUMP-000.md now exists as the canonical product constitution;
+  most of this file duplicates it. Slated to fold its unique v0.1 bits (concrete tech stack,
+  decided items) into BUMP-100 (MVP PRD), then be dropped. Identity-reference fixed:
+  bumpt carries no spec/PERSONA.md (a foreign body holds no identity files; identity is
+  canonical at cn-sigma).
 - v1.0.0 — initial seed; project constitution extracted from the retired Tau persona into
   its correct layer (layer 4, project binding) per Sigma's five-layer chain.
 
 **Pattern:** This file is the bumpt **project binding** — the layer-4 facts an engineer needs
-to operate coherently on this project, independent of which engineer (Sigma) operates here.
-**Relation:** Identity is at `spec/PERSONA.md` → cn-sigma; this file is project context only.
-**Exit:** Canonical product intent is the BUMP doc stack (BUMP-000 is source of truth). Where
-this file and BUMP-000 disagree, BUMP-000 wins and this file is patched.
+to operate coherently on this project. As of v1.1.0 it is **interim**: the canonical product
+intent is [`BUMP-000.md`](../BUMP-000.md); this file's unique remainder (tech stack, v0.1
+decisions) migrates to BUMP-100, after which this file is removed.
+**Relation:** Identity is canonical at the cn-sigma home hub (see [`../README.md`](../README.md)),
+not in this repo; this file is project context only.
+**Exit:** Where this file and BUMP-000 disagree, BUMP-000 wins. Folds into BUMP-100, then drops.
 
 ---
 
