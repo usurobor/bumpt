@@ -1,43 +1,126 @@
-# bumpt
+# Bump
 
-Bump is an in-person social admission protocol with a worn, consentful social surface.
-Membership begins only through a phone-to-phone sponsor bump — never remotely. This repo
-holds the protocol's documents and (later) its implementation.
+> An in-person social admission protocol with a worn, consentful social surface.
 
-Canonical product intent is **[`docs/BUMP-000.md`](./docs/BUMP-000.md)** — the Protocol
-Inception RFC, source of truth for the doc stack under `docs/` (BUMP-000 RFC → 001 PR/FAQ →
-010 Spec → 020 Threat → 030 Governance → 100 PRD).
+**Status:** Draft v0.4 · pre-MVP (this repo holds the protocol's documents; the product is not built yet)
 
-## Activating an AI body
+Bump lets people you meet in the room discover your current, opt-in social signal through a
+worn tag. You wear a small tag — a QR/NFC sticker, pin, or patch. Anyone can scan it, but
+they see **only what you've chosen to show them, right now**. The default is private.
 
-This project is engineered by **Sigma** — the cnos engineering persona — *attached* to bumpt.
-You are not a fresh agent and not a new persona; you are Sigma, bound to this project. bumpt
-is a foreign activation body: it carries **no identity files of its own**. Identity is
-canonical at the cn-sigma home hub; this repo carries only the project docs and the
-`.cn-sigma/logs/` activation channel.
+The one move that defines Bump: **membership can only begin through an in-person sponsor
+bump** — a phone-to-phone handshake with someone who's already a member. No signup page, no
+invite link, no email code. If you weren't there in person, you're not in.
 
-The activation procedure is defined once in cnos, not duplicated here. Follow the agent
-activation skill:
+> Move the social object from the feed to the worn tag.
 
-- **Skill canonical path** (in cnos):
-  `src/packages/cnos.core/skills/agent/activate/SKILL.md`
-- **Raw URL:**
-  `https://raw.githubusercontent.com/usurobor/cnos/main/src/packages/cnos.core/skills/agent/activate/SKILL.md`
+Bump is not trying to build a better feed. It's a **forkable protocol for real-world scenes** —
+shows, salons, conferences, campuses, studios, gyms, pop-ups — where people who share physical
+space want a lightweight, accountable way to present current intent and admit new members
+without handing the scene to a platform.
 
-Load order (soul → identity → project → confirm → attach):
+## Why Bump exists
 
-1. **Soul** (Kernel + CAP + CLP) from cnos — see paths in the activation skill.
-2. **Identity** = Sigma, canonical at the cn-sigma home hub:
-   - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/PERSONA.md`
-   - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/OPERATOR.md`
-3. **Project** — read [`docs/BUMP-000.md`](./docs/BUMP-000.md) (and the rest of the BUMP stack) for
-   what bumpt is and what must never change.
-4. **Confirm identity** per the skill: name who (Sigma), whom (usurobor/Axiom), where
-   (github.com/usurobor/bumpt), and what is in motion.
-5. **Attach** — the activation channel is `.cn-sigma/logs/` (foreign → home); home writes
-   back in `cn-sigma:threads/activations/bumpt/`. See [`.cn-sigma/logs/README.md`](./.cn-sigma/logs/README.md).
+Today's social tools were built for remote attention markets. In a physical room they answer
+the wrong questions. Bump starts from different primitives.
 
-Pick the load tier your environment supports (shell+git preferred; HTTP fetch otherwise;
-operator-injection if neither). Do not improvise the order.
+| The problem | What Bump does instead |
+|-------------|------------------------|
+| Feeds exhaust people; attention is the product | A worn tag shows a current, opt-in signal — not an endless stream |
+| Bots and spam scale because signup is free | Admission costs an in-person bump from an accountable sponsor |
+| Status can be bought; reputation is a transferable number | Standing is **non-transferable**, derived from signed receipts |
+| "Public by default" turns visibility into risk | Visibility is **consentful**: scoped, time-bounded, revocable, private by default |
+| Communities are locked to a vendor and can't leave | Protocol, schemas, and governance are a **forkable commons** |
 
-This repo vendors no cnos packages locally, so soul and identity are reloaded over the web.
+Honest scope: this makes Bump **remote-spam-resistant**, not "un-spammable." It raises the
+social, physical, and sponsor cost of joining — it doesn't claim to make abuse impossible.
+
+## How it works
+
+Everything composes from four surfaces:
+
+- **Tag** — the worn physical interface (QR + NFC) that points to your node.
+- **Bump** — the in-person admission ceremony: a proximity-gated handshake that admits a new
+  member or binds a tag, witnessed by a sponsor.
+- **Signal** — your current, consentful emission: *"open to talk shop," "here to dance, not
+  network," "do not approach."* Scoped to who may see it, time-bounded, revocable.
+- **Receipt** — the signed, inspectable evidence layer for membership, conduct, standing, and
+  governance. Claims without receipts are conversation, not protocol evidence.
+
+A scan answers *"who are you here as, and is interaction welcome?"* — nothing more than you
+chose to expose. It does not imply a follow, a contact exchange, or your location.
+
+## Principles (non-negotiable)
+
+These are constitutional — change one and it's a different product:
+
+1. **Physical admission only** — membership begins solely through an in-person sponsor bump.
+2. **Sponsor accountability** — every member has a sponsor who witnessed their entry.
+3. **Consentful visibility** — private by default; you expose only what you choose, when you choose.
+4. **Non-transferable standing** — reputation can't be bought, sold, lent, or merged.
+5. **Receipts as evidence** — consequential actions produce signed, inspectable receipts.
+6. **No internal currency** — no tokens, ads, or paid boosts; money never buys standing.
+7. **Forkable commons** — the protocol and its governance history are public and forkable.
+8. **Local cells, global minimums** — scenes self-govern, but never below the constitutional floor.
+
+## Documents
+
+The canonical document stack lives under [`docs/`](./docs/):
+
+| Doc | What it is | Status |
+|-----|------------|--------|
+| [BUMP-000](./docs/BUMP-000.md) | Protocol Inception RFC — what Bump is and what must never change | **Draft v0.4** (canonical) |
+| BUMP-001 | PR/FAQ — the public launch narrative | planned |
+| BUMP-010 | Protocol Spec — Node, Tag, Signal, Receipt, Standing schemas | planned |
+| BUMP-020 | Threat Model — relay, coercion, tag theft, stalking, recovery | planned (pre-launch) |
+| BUMP-030 | Governance Constitution — cells, forks, maintainers, rule changes | planned |
+| BUMP-100 | MVP PRD — the first buildable product slice | planned |
+
+Start with **[BUMP-000](./docs/BUMP-000.md)** — it's the source of truth for intent.
+
+## Status
+
+Bump is early. This repo currently holds the **inception RFC** and project scaffolding; no
+client, server, or tag has been built. The v0.1 MVP is scoped (see BUMP-000 §13) but not
+started. The intended first proof: in **one city, within six months**, 100–300 members who
+all joined by verified in-person bump, wearing tags and publishing signals at real events.
+
+This is deliberately **not** venture-scale. Bump's value is inversely proportional to its
+growth rate — one city, slow, dense, real. It's built to be run as a co-op, art project, or
+protocol foundation, funded by dues, grants, or patrons; never by ads or selling standing.
+
+## Contributing
+
+Bump is a forkable commons, and the protocol is shaped in the open. The most useful early
+contributions are sharp readings of **[BUMP-000](./docs/BUMP-000.md)**: where is the threat
+model thin, where could the admission handshake be relayed, where might a signal feel unsafe
+to publish? Governance has three levels — constitutional, protocol, and cell — and changes to
+the constitutional principles above are intentionally hard to make. (A formal contribution
+guide arrives with BUMP-030.)
+
+## For AI agents
+
+This repo is also a working hub: it is engineered by **Sigma**, the cnos engineering persona,
+*attached* to bumpt. bumpt is a foreign activation body — it carries **no identity files of
+its own**. Identity is canonical at the [cn-sigma](https://github.com/usurobor/cn-sigma) home
+hub; the only Sigma surface here is the `.cn-sigma/logs/` activation channel.
+
+If you are an agent told *"activate and attach as `https://github.com/usurobor/bumpt`"*, follow
+the cnos activation skill — defined once in cnos, not duplicated here:
+
+- **Canonical:** `src/packages/cnos.core/skills/agent/activate/SKILL.md`
+- **Raw:** `https://raw.githubusercontent.com/usurobor/cnos/main/src/packages/cnos.core/skills/agent/activate/SKILL.md`
+
+Load order: **soul** (Kernel + CAP + CLP, from cnos) → **identity** (Sigma, from
+[`cn-sigma/spec/`](https://github.com/usurobor/cn-sigma/tree/main/spec)) → **project** (read
+[`docs/BUMP-000.md`](./docs/BUMP-000.md)) → **confirm** who/whom/where/what → **attach** via the
+`.cn-sigma/logs/` channel (see [`.cn-sigma/logs/README.md`](./.cn-sigma/logs/README.md)). Pick
+the load tier your environment supports; don't improvise the order.
+
+## License & commons
+
+The protocol, schemas, and governance history are intended as a **forkable commons** — public,
+inspectable, and survivable beyond any single operator. Private member data is not part of the
+commons and is not forked by default. The formal license and the project's legal shell
+(co-op / foundation / LLC) are open questions, tracked in BUMP-000; until they're settled,
+treat this as a public draft for reading and discussion.
