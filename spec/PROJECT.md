@@ -13,7 +13,7 @@ Changelog:
 
 **Pattern:** This file is the bumpt **project binding** — the layer-4 facts an engineer needs
 to operate coherently on this project. As of v1.1.0 it is **interim**: the canonical product
-intent is [`BUMP-000.md`](../BUMP-000.md); this file's unique remainder (tech stack, v0.1
+intent is [`docs/BUMP-000.md`](../docs/BUMP-000.md); this file's unique remainder (tech stack, v0.1
 decisions) migrates to BUMP-100, after which this file is removed.
 **Relation:** Identity is canonical at the cn-sigma home hub (see [`../README.md`](../README.md)),
 not in this repo; this file is project context only.
@@ -60,7 +60,7 @@ Standing · Cell · Mission · Delegation.
 
 | Doc | What it is | State |
 |-----|------------|-------|
-| BUMP-000 | Protocol Inception RFC | **canonical** — Draft v0.4, in repo: [`BUMP-000.md`](../BUMP-000.md) |
+| BUMP-000 | Protocol Inception RFC | **canonical** — Draft v0.4, in repo: [`docs/BUMP-000.md`](../docs/BUMP-000.md) |
 | BUMP-001 | PR/FAQ — public launch narrative | next deliverable; seed in BUMP-000 §18 |
 | BUMP-010 | Protocol Spec — schemas + FSM tables | pending |
 | BUMP-020 | Threat Model | required pre-launch |

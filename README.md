@@ -4,9 +4,9 @@ Bump is an in-person social admission protocol with a worn, consentful social su
 Membership begins only through a phone-to-phone sponsor bump — never remotely. This repo
 holds the protocol's documents and (later) its implementation.
 
-Canonical product intent is **[`BUMP-000.md`](./BUMP-000.md)** — the Protocol Inception RFC,
-source of truth for the doc stack (BUMP-000 RFC → 001 PR/FAQ → 010 Spec → 020 Threat →
-030 Governance → 100 PRD).
+Canonical product intent is **[`docs/BUMP-000.md`](./docs/BUMP-000.md)** — the Protocol
+Inception RFC, source of truth for the doc stack under `docs/` (BUMP-000 RFC → 001 PR/FAQ →
+010 Spec → 020 Threat → 030 Governance → 100 PRD).
 
 ## Activating an AI body
 
@@ -30,7 +30,7 @@ Load order (soul → identity → project → confirm → attach):
 2. **Identity** = Sigma, canonical at the cn-sigma home hub:
    - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/PERSONA.md`
    - `https://raw.githubusercontent.com/usurobor/cn-sigma/main/spec/OPERATOR.md`
-3. **Project** — read [`BUMP-000.md`](./BUMP-000.md) (and the rest of the BUMP stack) for
+3. **Project** — read [`docs/BUMP-000.md`](./docs/BUMP-000.md) (and the rest of the BUMP stack) for
    what bumpt is and what must never change.
 4. **Confirm identity** per the skill: name who (Sigma), whom (usurobor/Axiom), where
    (github.com/usurobor/bumpt), and what is in motion.
