@@ -74,7 +74,7 @@ The canonical document stack lives under [`docs/`](./docs/):
 | BUMP-010 | Protocol Spec — Node, Tag, Signal, Receipt, Standing schemas | planned |
 | BUMP-020 | Threat Model — relay, coercion, tag theft, stalking, recovery | planned (pre-launch) |
 | BUMP-030 | Governance Constitution — cells, forks, maintainers, rule changes | planned |
-| BUMP-100 | MVP PRD — the first buildable product slice | planned |
+| [BUMP-100](./docs/BUMP-100.md) | MVP PRD — the first buildable product slice | **Draft v0.1** |
 
 Start with **[BUMP-000](./docs/BUMP-000.md)** — it's the source of truth for intent.
 
