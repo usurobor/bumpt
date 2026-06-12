@@ -3,3 +3,6 @@ node_modules/
 .env
 .env*.local
 *.log
+
+# Next-generated, regenerated on build
+next-env.d.ts
