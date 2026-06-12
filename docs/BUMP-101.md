@@ -58,30 +58,37 @@ This keeps the experiment from training remote-signup expectations, and it drama
 
 ## 6. Metrics
 
-Per founder, anonymous. Named metrics:
+The tag-wearer is a **member** (a node, per BUMP-000 §7). In this experiment the members are the three founders — so the entity is generalized as `member`, and "founder" appears only where the concern is founder charisma (§7 distribution).
 
-- `scan_count` — scans (which QR, when)
+Per member, anonymous. Named metrics:
+
+- `exposure_hours` — logged time a member wore the tag in-scene, by context. **The scan denominator**: 60 scans over 3 member-hours and over 40 member-hours are different results.
+- `scan_count` — scans (which QR, when); normalized as `scans_per_exposure_hour`
 - `about_open_count` — "What is this?" opens
 - `bump_request_count` — emails left
 - `scan_to_about_rate`, `about_to_request_rate`, `scan_to_request_rate`
 
-The funnel is threaded per founder — scans → About-opens → bump requests, with conversion — so "how many, of whom" is answerable. Founder distribution is itself a metric: it prevents one founder's charisma from carrying the result.
+The funnel is threaded per member — scans → About-opens → bump requests, with conversion — so "how many, of whom" is answerable. Member distribution is itself a metric: it prevents one member's (founder's) charisma from carrying the result.
 
-**Scan context** (manual founder note, to isolate H1): `unprompted` · `after conversation` · `founder-directed` · `test` · `unknown`. Only `unprompted` counts toward the hook; `test` and `founder-directed` are excluded from demand metrics.
+**Scan context** — each member sets their current context in their ops page (§10), and every public scan inherits the active window, turning "unprompted" into a measured field condition: `unprompted` · `after conversation` · `member-directed` · `test` · `unknown`. Only `unprompted` counts toward the hook; `test` and `member-directed` are excluded from demand metrics.
 
 Store only consented emails. Do not fingerprint scanners.
 
 ## 7. Decision rule
 
-The experiment is decided against these bars, **set before the event** so the result is read, not rationalized. Freeze them in a commit/tag before the shirts are printed.
+The experiment is decided against these bars, **frozen before the event** so the result is read, not rationalized — in a prereg tag cut after the build, copy, and QR artwork are final (§10, §12).
 
 | Metric | Bar | Why it matters |
 |---|---:|---|
-| Unprompted scans | TBD | the worn tag pulls attention |
-| About-open rate | TBD% | the card creates curiosity |
-| Bump requests | TBD | curiosity turns into demand |
-| About-to-request rate | TBD% | the offer is clear enough |
-| Founder distribution | TBD | no single founder carries the result |
+| Logged exposure | ≥24 member-hours total; ≥6h per member; across ≥2 festival days | the scan denominator is real |
+| Unprompted scans | ≥60 total **and** ≥2.0 per logged member-hour | the worn tag pulls attention |
+| About-open rate | ≥35% of unprompted scans | the card creates curiosity |
+| Bump requests | ≥12 unique non-member emails | curiosity turns into demand |
+| About-to-request rate | ≥25% | the offer is clear enough |
+| Member distribution | ≥2 members each ≥15 unprompted scans and ≥3 bump requests; no member supplies >70% of requests | no single member (founder) carries the result |
+| Data quality | ≥85% of scans have known context; test and member-directed scans excluded; instrumentation up for ≥95% of logged exposure | the result can be trusted |
+
+These bars are intentionally modest. The experiment should not need hundreds of emails to justify the MVP — only enough evidence that the pull is not founder charisma, friend traffic, or one lucky interaction.
 
 | Result | Decision |
 |---|---|
