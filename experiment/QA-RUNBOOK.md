@@ -15,9 +15,10 @@ Run this before freezing the prereg tag. A failed scan must mean "bad hook," not
 ## Page / funnel path (real phones)
 
 - [ ] `/m/<id>` loads fast on festival-grade mobile network; card renders.
-- [ ] "What is this?" opens `/about` carrying `f` and `s`.
-- [ ] Submitting an email lands on `/thanks`; a row appears in `bump_requests`.
-- [ ] Re-submitting the same email does not create a second demand row (dedupe).
+- [ ] "What is this?" opens `/about` carrying `m` and `s`.
+- [ ] Tapping "I want in" lands on `/thanks`; a row appears in `want_ins`.
+- [ ] `/thanks` shows "come back in a month" + the live want-in count.
+- [ ] Tapping again from the same device does not create a second want_in (dedupe).
 - [ ] The About copy says membership is in-person only; nothing reads as remote signup.
 
 ## Instrumentation
@@ -26,8 +27,8 @@ Run this before freezing the prereg tag. A failed scan must mean "bad hook," not
 - [ ] Opening an "unprompted" window tags subsequent scans `unprompted`.
 - [ ] "Stop window" returns scans to `unknown`.
 - [ ] Test scans (set a `test` window) are excluded from demand metrics.
-- [ ] `/ops/export` returns CSV with per-member-context exposure, scans, scans/h, opens, requests.
-- [ ] No IP, user agent, ad pixel, or behavioral analytics is written anywhere.
+- [ ] `/ops/export` returns CSV with per-member-context exposure, scans, scans/h, opens, want-ins, rates.
+- [ ] No email / IP / user agent / pixel is stored anywhere; only an anonymous `device_id`.
 
 ## Run-day procedure
 

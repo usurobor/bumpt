@@ -15,11 +15,7 @@ export default async function Ops({
 }) {
   const token = searchParams.token ?? '';
   if (!process.env.OPS_TOKEN || token !== process.env.OPS_TOKEN) {
-    return (
-      <main>
-        <h1>Unauthorized</h1>
-      </main>
-    );
+    return <main><h1>Unauthorized</h1></main>;
   }
 
   const memberId = params.member;
@@ -29,9 +25,7 @@ export default async function Ops({
   const current = await activeContext(memberId);
 
   const { data: sessions } = await db
-    .from('exposure_sessions')
-    .select('context,started_at,ended_at')
-    .eq('member_id', memberId);
+    .from('exposure_sessions').select('context,started_at,ended_at').eq('member_id', memberId);
   const exposure: Record<string, number> = {};
   for (const s of sessions ?? []) {
     const start = new Date(s.started_at).getTime();
@@ -45,8 +39,8 @@ export default async function Ops({
 
   const { count: aboutOpens } = await db
     .from('about_events').select('*', { count: 'exact', head: true }).eq('member_id', memberId);
-  const { count: requests } = await db
-    .from('bump_requests').select('*', { count: 'exact', head: true }).eq('member_id', memberId);
+  const { count: wantIns } = await db
+    .from('want_ins').select('*', { count: 'exact', head: true }).eq('member_id', memberId);
 
   const Win = ({ c, label }: { c: string; label: string }) => (
     <form action="/api/ops/window" method="post" style={{ display: 'inline-block', marginRight: 8, marginBottom: 8 }}>
@@ -78,7 +72,7 @@ export default async function Ops({
       <h2>counts</h2>
       <ul>
         <li>About opens: {aboutOpens ?? 0}</li>
-        <li>Bump requests: {requests ?? 0}</li>
+        <li>Want-ins: {wantIns ?? 0}</li>
       </ul>
 
       <h3>by context</h3>
