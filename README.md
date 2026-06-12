@@ -82,10 +82,13 @@ Start with **[BUMP-000](./docs/BUMP-000.md)** — it's the source of truth for i
 
 ## Status
 
-Bump is early. This repo currently holds the **inception RFC** and project scaffolding; no
-client, server, or tag has been built. The v0.1 MVP is scoped (see BUMP-000 §13) but not
-started. The intended first proof: in **one city, within six months**, 100–300 members who
-all joined by verified in-person bump, wearing tags and publishing signals at real events.
+Bump is early. The repo holds the **inception RFC** (BUMP-000), the **MVP PRD** (BUMP-100),
+and a pre-MVP **field experiment** (BUMP-101). A throwaway experiment app lives under
+[`experiment/`](./experiment/) — it is written but **not yet deployed or validated** (it
+needs a Supabase project, env, Vercel deploy, and real-phone QA). No production client,
+server, or tag exists. The v0.1 MVP is scoped (BUMP-000 §13, BUMP-100) but not started. The
+intended first proof: in **one city, within six months**, 100–300 members who all joined by
+verified in-person bump, wearing tags and publishing signals at real events.
 
 This is deliberately **not** venture-scale. Bump's value is inversely proportional to its
 growth rate — one city, slow, dense, real. It's built to be run as a co-op, art project, or

@@ -45,6 +45,24 @@ Distinct URL per member · founder test scans excludable (set a `test` window) �
 or ad pixels · consent version stored with each email · emails deduped (unique constraint) ·
 per-member funnel viewable (`/ops/:member`) · aggregate CSV export (`/ops/export`).
 
+## Deployment acceptance
+
+After Supabase + Vercel wiring, the deploy is accepted only when all hold (verify on the live URL):
+
+- [ ] `/m/a` records a scan_event
+- [ ] `/m/a` → About carries `m` and `s`
+- [ ] opening About records an about_event
+- [ ] a bump request stores `consent_version`
+- [ ] a duplicate email does not create a second demand row
+- [ ] opening an ops window changes the context of subsequent scans
+- [ ] "Stop window" returns new scans to `unknown`
+- [ ] `/ops/export` CSV computes the §7 bars directly (per-member-context, with rates)
+- [ ] no IP / user agent / pixel is stored
+- [ ] the service role key is never client-exposed (server-only env)
+
+Vercel: set the project **Root Directory** to `experiment/`; add `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `OPS_TOKEN` as environment variables.
+
 ## Honest status
 
 Written, not run. No Supabase creds or deploy in this environment, so it is unverified end-to-end;
