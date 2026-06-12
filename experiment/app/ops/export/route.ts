@@ -6,26 +6,24 @@ const hours = (ms: number) => ms / 3_600_000;
 const key = (member: string, ctx: string) => `${member}|${ctx}`;
 const CONTEXTS = ['unprompted', 'after_conversation', 'member_directed', 'test', 'unknown'];
 
-// Per-member-per-context export so the BUMP-101 §7 bars compute directly:
-// About-opens and bump-requests are attributed to the context the scan was
-// recorded under (via scan_id), not just to the member. test and
-// member_directed therefore stay excludable from demand, as §7 requires.
+// Per-member-per-context export so the BUMP-101 §7 bars compute directly.
+// About-opens and want-ins are attributed to the context the scan was recorded
+// under (via scan_id), so test/member_directed demand stays excludable.
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token') ?? '';
   if (!process.env.OPS_TOKEN || token !== process.env.OPS_TOKEN) {
     return new NextResponse('unauthorized', { status: 401 });
   }
 
-  const [{ data: members }, { data: scans }, { data: abouts }, { data: reqs }, { data: sessions }] =
+  const [{ data: members }, { data: scans }, { data: abouts }, { data: wantIns }, { data: sessions }] =
     await Promise.all([
       db.from('members').select('id,bump_name'),
       db.from('scan_events').select('scan_id,member_id,context'),
       db.from('about_events').select('scan_id,member_id'),
-      db.from('bump_requests').select('scan_id,member_id'),
+      db.from('want_ins').select('scan_id,member_id'),
       db.from('exposure_sessions').select('member_id,context,started_at,ended_at'),
     ]);
 
-  // scan_id -> {member, context}
   const scanMap = new Map<string, { member: string; context: string }>();
   for (const s of scans ?? []) scanMap.set(s.scan_id, { member: s.member_id, context: s.context });
 
@@ -49,20 +47,20 @@ export async function GET(req: NextRequest) {
     (aboutScanIds[key(member, context)] ??= new Set()).add(a.scan_id ?? `noscan:${Math.random()}`);
   }
 
-  // Bump-requests attributed to the scan's context (email is already unique-deduped at write).
-  const reqCount: Record<string, number> = {};
-  for (const r of reqs ?? []) {
-    const info = r.scan_id ? scanMap.get(r.scan_id) : undefined;
-    const member = info?.member ?? r.member_id;
+  // Want-ins are already device-deduped at write; attribute to the scan's context.
+  const wantCount: Record<string, number> = {};
+  for (const w of wantIns ?? []) {
+    const info = w.scan_id ? scanMap.get(w.scan_id) : undefined;
+    const member = info?.member ?? w.member_id;
     const context = info?.context ?? 'unknown';
     if (!member) continue;
-    reqCount[key(member, context)] = (reqCount[key(member, context)] ?? 0) + 1;
+    wantCount[key(member, context)] = (wantCount[key(member, context)] ?? 0) + 1;
   }
 
   const rate = (num: number, den: number) => (den > 0 ? (num / den).toFixed(3) : '');
   const rows = [[
     'member_id', 'bump_name', 'context', 'exposure_hours', 'scans', 'scans_per_hour',
-    'about_opens', 'bump_requests', 'scan_to_about_rate', 'about_to_request_rate', 'scan_to_request_rate',
+    'about_opens', 'want_ins', 'scan_to_about_rate', 'about_to_wantin_rate', 'scan_to_wantin_rate',
   ]];
   for (const m of members ?? []) {
     for (const c of CONTEXTS) {
@@ -70,10 +68,10 @@ export async function GET(req: NextRequest) {
       const h = hours(exposureMs[k] ?? 0);
       const scansN = scanCount[k] ?? 0;
       const opens = aboutScanIds[k]?.size ?? 0;
-      const requests = reqCount[k] ?? 0;
+      const wants = wantCount[k] ?? 0;
       rows.push([
         m.id, m.bump_name, c, h.toFixed(3), String(scansN), h > 0 ? (scansN / h).toFixed(3) : '',
-        String(opens), String(requests), rate(opens, scansN), rate(requests, opens), rate(requests, scansN),
+        String(opens), String(wants), rate(opens, scansN), rate(wants, opens), rate(wants, scansN),
       ]);
     }
   }
