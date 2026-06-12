@@ -75,7 +75,8 @@ The canonical document stack lives under [`docs/`](./docs/):
 | BUMP-020 | Threat Model — relay, coercion, tag theft, stalking, recovery | planned (pre-launch) |
 | BUMP-030 | Governance Constitution — cells, forks, maintainers, rule changes | planned |
 | [BUMP-100](./docs/BUMP-100.md) | MVP PRD — the first buildable product slice | **Draft v0.1** |
-| [BUMP-101](./docs/BUMP-101.md) | Stone Techno POC — worn-QR field test before the MVP | **Draft v0.1** |
+| [BUMP-101](./docs/BUMP-101.md) | Stone Techno field experiment — worn-QR pre-MVP test | **Draft v0.1.1** |
+| [BUMP-101-RESULTS](./docs/BUMP-101-RESULTS.md) | Field experiment outcome (pre-registered, filled post-event) | awaiting event |
 
 Start with **[BUMP-000](./docs/BUMP-000.md)** — it's the source of truth for intent.
 
