@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 const hours = (ms: number) => ms / 3_600_000;
+const key = (member: string, ctx: string) => `${member}|${ctx}`;
+const CONTEXTS = ['unprompted', 'after_conversation', 'member_directed', 'test', 'unknown'];
 
+// Per-member-per-context export so the BUMP-101 §7 bars compute directly:
+// About-opens and bump-requests are attributed to the context the scan was
+// recorded under (via scan_id), not just to the member. test and
+// member_directed therefore stay excludable from demand, as §7 requires.
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token') ?? '';
   if (!process.env.OPS_TOKEN || token !== process.env.OPS_TOKEN) {
@@ -13,34 +19,65 @@ export async function GET(req: NextRequest) {
   const [{ data: members }, { data: scans }, { data: abouts }, { data: reqs }, { data: sessions }] =
     await Promise.all([
       db.from('members').select('id,bump_name'),
-      db.from('scan_events').select('member_id,context'),
-      db.from('about_events').select('member_id'),
-      db.from('bump_requests').select('member_id'),
+      db.from('scan_events').select('scan_id,member_id,context'),
+      db.from('about_events').select('scan_id,member_id'),
+      db.from('bump_requests').select('scan_id,member_id'),
       db.from('exposure_sessions').select('member_id,context,started_at,ended_at'),
     ]);
 
-  const exposure: Record<string, Record<string, number>> = {};
+  // scan_id -> {member, context}
+  const scanMap = new Map<string, { member: string; context: string }>();
+  for (const s of scans ?? []) scanMap.set(s.scan_id, { member: s.member_id, context: s.context });
+
+  const exposureMs: Record<string, number> = {};
   for (const s of sessions ?? []) {
     const start = new Date(s.started_at).getTime();
     const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now();
-    (exposure[s.member_id] ??= {})[s.context] = ((exposure[s.member_id] ?? {})[s.context] ?? 0) + (end - start);
+    exposureMs[key(s.member_id, s.context)] = (exposureMs[key(s.member_id, s.context)] ?? 0) + (end - start);
   }
-  const scanByCtx: Record<string, Record<string, number>> = {};
-  for (const s of scans ?? []) (scanByCtx[s.member_id] ??= {})[s.context] = ((scanByCtx[s.member_id] ?? {})[s.context] ?? 0) + 1;
-  const aboutBy: Record<string, number> = {};
-  for (const a of abouts ?? []) if (a.member_id) aboutBy[a.member_id] = (aboutBy[a.member_id] ?? 0) + 1;
-  const reqBy: Record<string, number> = {};
-  for (const r of reqs ?? []) if (r.member_id) reqBy[r.member_id] = (reqBy[r.member_id] ?? 0) + 1;
 
-  const contexts = ['unprompted', 'after_conversation', 'member_directed', 'test', 'unknown'];
-  const rows = [['member_id', 'bump_name', 'context', 'exposure_hours', 'scans', 'scans_per_hour', 'member_about_opens', 'member_bump_requests']];
+  const scanCount: Record<string, number> = {};
+  for (const s of scans ?? []) scanCount[key(s.member_id, s.context)] = (scanCount[key(s.member_id, s.context)] ?? 0) + 1;
+
+  // About-opens: distinct scan_id (reloads don't inflate curiosity), attributed to the scan's context.
+  const aboutScanIds: Record<string, Set<string>> = {};
+  for (const a of abouts ?? []) {
+    const info = a.scan_id ? scanMap.get(a.scan_id) : undefined;
+    const member = info?.member ?? a.member_id;
+    const context = info?.context ?? 'unknown';
+    if (!member) continue;
+    (aboutScanIds[key(member, context)] ??= new Set()).add(a.scan_id ?? `noscan:${Math.random()}`);
+  }
+
+  // Bump-requests attributed to the scan's context (email is already unique-deduped at write).
+  const reqCount: Record<string, number> = {};
+  for (const r of reqs ?? []) {
+    const info = r.scan_id ? scanMap.get(r.scan_id) : undefined;
+    const member = info?.member ?? r.member_id;
+    const context = info?.context ?? 'unknown';
+    if (!member) continue;
+    reqCount[key(member, context)] = (reqCount[key(member, context)] ?? 0) + 1;
+  }
+
+  const rate = (num: number, den: number) => (den > 0 ? (num / den).toFixed(3) : '');
+  const rows = [[
+    'member_id', 'bump_name', 'context', 'exposure_hours', 'scans', 'scans_per_hour',
+    'about_opens', 'bump_requests', 'scan_to_about_rate', 'about_to_request_rate', 'scan_to_request_rate',
+  ]];
   for (const m of members ?? []) {
-    for (const c of contexts) {
-      const h = hours(exposure[m.id]?.[c] ?? 0);
-      const n = scanByCtx[m.id]?.[c] ?? 0;
-      rows.push([m.id, m.bump_name, c, h.toFixed(3), String(n), h > 0 ? (n / h).toFixed(3) : '', String(aboutBy[m.id] ?? 0), String(reqBy[m.id] ?? 0)]);
+    for (const c of CONTEXTS) {
+      const k = key(m.id, c);
+      const h = hours(exposureMs[k] ?? 0);
+      const scansN = scanCount[k] ?? 0;
+      const opens = aboutScanIds[k]?.size ?? 0;
+      const requests = reqCount[k] ?? 0;
+      rows.push([
+        m.id, m.bump_name, c, h.toFixed(3), String(scansN), h > 0 ? (scansN / h).toFixed(3) : '',
+        String(opens), String(requests), rate(opens, scansN), rate(requests, opens), rate(requests, scansN),
+      ]);
     }
   }
+
   const csv = rows.map((r) => r.map((x) => (/[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x)).join(',')).join('\n');
   return new NextResponse(csv, {
     headers: { 'content-type': 'text/csv', 'content-disposition': 'attachment; filename="bump-101-export.csv"' },

@@ -5,12 +5,12 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(req: NextRequest) {
   const form = await req.formData();
   const email = String(form.get('email') ?? '').trim().toLowerCase();
-  const member_id = form.get('f') ? String(form.get('f')) : null;
+  const member_id = form.get('m') ? String(form.get('m')) : null;
   const scan_id = form.get('s') ? String(form.get('s')) : null;
 
   if (!email || !email.includes('@')) {
     const back = new URL('/about', req.url);
-    if (member_id) back.searchParams.set('f', member_id);
+    if (member_id) back.searchParams.set('m', member_id);
     if (scan_id) back.searchParams.set('s', scan_id);
     back.searchParams.set('err', '1');
     return NextResponse.redirect(back, 303);
