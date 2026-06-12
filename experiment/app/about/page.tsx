@@ -9,11 +9,11 @@ const CONSENT =
 export default async function About({
   searchParams,
 }: {
-  searchParams: { f?: string; s?: string; err?: string };
+  searchParams: { m?: string; s?: string; err?: string };
 }) {
-  const f = searchParams.f ?? null;
+  const m = searchParams.m ?? null;
   const s = searchParams.s ?? null;
-  if (f || s) await db.from('about_events').insert({ member_id: f, scan_id: s });
+  if (m || s) await db.from('about_events').insert({ member_id: m, scan_id: s });
 
   return (
     <main>
@@ -31,7 +31,7 @@ export default async function About({
       {searchParams.err ? <p style={{ color: '#b00' }}>Please enter a valid email.</p> : null}
 
       <form action="/api/bump-request" method="post" style={{ marginTop: 24 }}>
-        <input type="hidden" name="f" value={f ?? ''} />
+        <input type="hidden" name="m" value={m ?? ''} />
         <input type="hidden" name="s" value={s ?? ''} />
         <input
           type="email"

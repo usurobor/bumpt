@@ -23,7 +23,7 @@ export default async function Card({ params }: { params: { member: string } }) {
       <h1 style={{ marginBottom: 4 }}>{member.bump_name}</h1>
       <p style={{ color: '#666', marginTop: 0 }}>{member.static_line}</p>
       <p style={{ marginTop: 32 }}>
-        <a href={`/about?f=${encodeURIComponent(member.id)}&s=${encodeURIComponent(scanId)}`}>What is this?</a>
+        <a href={`/about?m=${encodeURIComponent(member.id)}&s=${encodeURIComponent(scanId)}`}>What is this?</a>
       </p>
     </main>
   );

@@ -70,7 +70,7 @@ Per member, anonymous. Named metrics:
 
 The funnel is threaded per member — scans → About-opens → bump requests, with conversion — so "how many, of whom" is answerable. Member distribution is itself a metric: it prevents one member's (founder's) charisma from carrying the result.
 
-**Scan context** — each member sets their current context in their ops page (§10), and every public scan inherits the active window, turning "unprompted" into a measured field condition: `unprompted` · `after conversation` · `member-directed` · `test` · `unknown`. Only `unprompted` counts toward the hook; `test` and `member-directed` are excluded from demand metrics.
+**Scan context** — each member sets their current context in their ops page (§10), and every public scan inherits the active window, turning "unprompted" into a measured field condition. Stored enum (exact): `unprompted` · `after_conversation` · `member_directed` · `test` · `unknown`. Only `unprompted` counts toward the hook; `test` and `member_directed` are excluded from demand metrics.
 
 Store only consented emails. Do not fingerprint scanners.
 
@@ -86,7 +86,7 @@ The experiment is decided against these bars, **frozen before the event** so the
 | Bump requests | ≥12 unique non-member emails | curiosity turns into demand |
 | About-to-request rate | ≥25% | the offer is clear enough |
 | Member distribution | ≥2 members each ≥15 unprompted scans and ≥3 bump requests; no member supplies >70% of requests | no single member (founder) carries the result |
-| Data quality | ≥85% of scans have known context; test and member-directed scans excluded; instrumentation up for ≥95% of logged exposure | the result can be trusted |
+| Data quality | ≥85% of scans have known context; `test` and `member_directed` scans excluded; instrumentation up for ≥95% of logged exposure | the result can be trusted |
 
 These bars are intentionally modest. The experiment should not need hundreds of emails to justify the MVP — only enough evidence that the pull is not founder charisma, friend traffic, or one lucky interaction.
 
