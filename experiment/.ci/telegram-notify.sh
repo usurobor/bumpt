@@ -5,6 +5,9 @@
 # Inputs (env):
 #   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID  - credentials; if either is empty the
 #                                           script no-ops (keeps forks/PRs green).
+#   TELEGRAM_TOPIC_ID                      - optional; message_thread_id for a
+#                                           forum/topic group (omit for a normal
+#                                           chat/channel or the General topic).
 #   TG_HEADER    - line 1, e.g. "✅ Pre-deploy passed"   (required)
 #   TG_SUBLINE   - line 2, e.g. "bumpt@dev:abc1234"      (required)
 #   TG_BREAKDOWN - optional multi-line block (red only)
@@ -41,9 +44,15 @@ for b in "${blocks[@]}"; do
   msg+="$b"
 done
 
+args=(
+  --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}"
+  --data-urlencode "disable_web_page_preview=true"
+  --data-urlencode "text=${msg}"
+)
+# Post into a specific forum topic when configured.
+[[ -n "${TELEGRAM_TOPIC_ID:-}" ]] && args+=( --data-urlencode "message_thread_id=${TELEGRAM_TOPIC_ID}" )
+
 curl -sS --fail-with-body \
   "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-  --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-  --data-urlencode "disable_web_page_preview=true" \
-  --data-urlencode "text=${msg}" >/dev/null
-echo "telegram: sent"
+  "${args[@]}" >/dev/null
+echo "telegram: sent${TELEGRAM_TOPIC_ID:+ (topic ${TELEGRAM_TOPIC_ID})}"
