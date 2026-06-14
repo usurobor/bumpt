@@ -1,8 +1,0 @@
-node_modules/
-.next/
-.env
-.env*.local
-*.log
-
-# Next-generated, regenerated on build
-next-env.d.ts
