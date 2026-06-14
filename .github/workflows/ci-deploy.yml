@@ -66,6 +66,19 @@ jobs:
       - name: Smoke test
         run: npm run test:smoke
 
+      - name: Verify database state
+        env:
+          PGPASSWORD: postgres
+        run: |
+          q() { psql -h localhost -U postgres -d main -tAc "$1" | tr -d '[:space:]'; }
+          want_ins=$(q "select count(*) from want_ins")
+          scans=$(q "select count(*) from scan_events")
+          echo "want_ins=$want_ins scan_events=$scans"
+          # Two taps from one device -> exactly one want_in (created + deduped).
+          test "$want_ins" = "1" || { echo "::error::expected 1 want_in, got $want_ins"; exit 1; }
+          # The /m/a scan was recorded; the unknown member did not create one.
+          test "$scans" -ge "1" || { echo "::error::expected >=1 scan_event, got $scans"; exit 1; }
+
       - name: Stop app
         if: always()
         run: kill "$(cat /tmp/app.pid)" 2>/dev/null || true
