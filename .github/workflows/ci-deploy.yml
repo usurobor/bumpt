@@ -19,6 +19,14 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    outputs:
+      typecheck: ${{ steps.typecheck.outcome }}
+      build: ${{ steps.build.outcome }}
+      smoke: ${{ steps.smoke.outcome }}
+      dbverify: ${{ steps.dbverify.outcome }}
+      passed: ${{ steps.stats.outputs.passed }}
+      ran: ${{ steps.stats.outputs.ran }}
+      skipped: ${{ steps.stats.outputs.skipped }}
     defaults:
       run:
         working-directory: experiment
@@ -35,9 +43,11 @@ jobs:
         run: npm ci
 
       - name: Typecheck
+        id: typecheck
         run: npm run typecheck
 
       - name: Build
+        id: build
         run: npm run build
 
       - name: Start Postgres + Neon HTTP proxy
@@ -64,9 +74,11 @@ jobs:
           exit 1
 
       - name: Smoke test
+        id: smoke
         run: npm run test:smoke
 
       - name: Verify database state
+        id: dbverify
         env:
           PGPASSWORD: postgres
         run: |
@@ -78,6 +90,16 @@ jobs:
           test "$want_ins" = "1" || { echo "::error::expected 1 want_in, got $want_ins"; exit 1; }
           # The /m/a scan was recorded; the unknown member did not create one.
           test "$scans" -ge "1" || { echo "::error::expected >=1 scan_event, got $scans"; exit 1; }
+
+      - name: Smoke stats
+        id: stats
+        if: always()
+        run: |
+          if [[ -f smoke-stats.json ]]; then
+            echo "passed=$(jq -r '.expected' smoke-stats.json)"            >> "$GITHUB_OUTPUT"
+            echo "ran=$(jq -r '.expected + .unexpected' smoke-stats.json)" >> "$GITHUB_OUTPUT"
+            echo "skipped=$(jq -r '.skipped' smoke-stats.json)"            >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Stop app
         if: always()
@@ -108,3 +130,98 @@ jobs:
           git tag -a "$TAG" -m "Gated deploy of ${GITHUB_SHA}"
           git push origin "$TAG"
           gh release create "$TAG" --title "$TAG" --generate-notes
+
+  # Pre-deploy notification: runs after the gate regardless of result.
+  # Green is short (headline + aggregate); red is detailed (per-step breakdown).
+  notify-pre:
+    needs: build-test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Telegram — pre-deploy
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GATE: ${{ needs.build-test.result }}
+          O_TYPECHECK: ${{ needs.build-test.outputs.typecheck }}
+          O_BUILD: ${{ needs.build-test.outputs.build }}
+          O_SMOKE: ${{ needs.build-test.outputs.smoke }}
+          O_DBVERIFY: ${{ needs.build-test.outputs.dbverify }}
+          PASSED: ${{ needs.build-test.outputs.passed }}
+          RAN: ${{ needs.build-test.outputs.ran }}
+          SKIPPED: ${{ needs.build-test.outputs.skipped }}
+        run: |
+          icon() { case "$1" in
+            success) printf '✅';; failure) printf '❌';;
+            cancelled) printf '🚫';; skipped) printf '⏭';; *) printf '❓';; esac; }
+
+          sha7="${GITHUB_SHA:0:7}"
+          subject="$(git log -1 --pretty=%s)"
+
+          # Aggregate one-liner + smoke-row count suffix, only when stats exist.
+          agg=""; smoke_suffix=""
+          if [[ -n "${RAN:-}" ]]; then
+            agg="smoke · ${PASSED}/${RAN} checks passed"
+            smoke_suffix=" (${PASSED}/${RAN}"
+            if [[ "${SKIPPED:-0}" -gt 0 ]]; then
+              agg="${agg} (${SKIPPED} skipped)"
+              smoke_suffix="${smoke_suffix}, ${SKIPPED} skipped"
+            fi
+            smoke_suffix="${smoke_suffix})"
+          fi
+
+          export TG_SUBLINE="bumpt@${GITHUB_REF_NAME}:${sha7}"
+          export TG_SUBJECT="$subject"
+          export TG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          export TG_AGGREGATE="$agg"
+
+          if [[ "$GATE" == "success" ]]; then
+            export TG_HEADER="✅ Pre-deploy passed"
+          else
+            export TG_HEADER="❌ Pre-deploy failed"
+            export TG_BREAKDOWN="$(printf '  %s typecheck\n  %s build\n  %s smoke%s\n  %s db-verify' \
+              "$(icon "$O_TYPECHECK")" "$(icon "$O_BUILD")" "$(icon "$O_SMOKE")" "$smoke_suffix" "$(icon "$O_DBVERIFY")")"
+          fi
+
+          bash experiment/.ci/telegram-notify.sh
+
+  # Post-deploy notification: runs after the deploy job (skipped when the gate
+  # failed and deploy never ran). Notify-only today — no live-site test yet.
+  notify-post:
+    needs: deploy
+    if: ${{ always() && needs.deploy.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Notify Telegram — post-deploy
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RESULT: ${{ needs.deploy.result }}
+          PROD_URL: ${{ vars.PROD_URL }}
+        run: |
+          sha7="${GITHUB_SHA:0:7}"
+          subject="$(git log -1 --pretty=%s)"
+          tag="$(git tag --list 'deploy-*' --points-at HEAD | head -n1)"
+
+          case "$RESULT" in
+            success)   header="✅ Post-deploy success";;
+            failure)   header="❌ Post-deploy failed";;
+            cancelled) header="🚫 Post-deploy cancelled";;
+            *)         header="❓ Post-deploy ${RESULT}";;
+          esac
+
+          subline="bumpt@${tag:-$GITHUB_REF_NAME}:${sha7}"
+          [[ -n "${PROD_URL:-}" ]] && subline="${subline} → ${PROD_URL}"
+
+          export TG_HEADER="$header"
+          export TG_SUBLINE="$subline"
+          export TG_SUBJECT="$subject"
+          export TG_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          bash experiment/.ci/telegram-notify.sh
