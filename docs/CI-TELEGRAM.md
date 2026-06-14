@@ -101,30 +101,47 @@ delta is structural, not a regression.
 
 ## One-time setup
 
-Notifications **no-op cleanly** until both secrets exist, so the workflow stays
+Notifications **no-op cleanly** until the credentials exist, so the workflow stays
 green for forks/PRs and before setup. To turn them on:
 
 1. **Create a bot.** In Telegram, message [@BotFather](https://t.me/BotFather),
    send `/newbot`, follow the prompts. It returns a token like
-   `123456789:AAExampleTokenString` → `TELEGRAM_BOT_TOKEN`.
+   `123456789:AAExampleTokenString` → `TELEGRAM_BOT_TOKEN`. Copy it whole (it's
+   `digits:letters`); a truncated/space-padded token yields `401 Unauthorized`,
+   a malformed URL yields `404 Not Found`.
 
-2. **Pick the destination and get its chat id.**
-   - **Channel:** create one, add the bot as an **admin** so it can post. The id
-     looks like `-1001234567890`.
-   - **Group:** add the bot to the group; the id is negative, e.g. `-1234567890`.
+2. **Pick the destination and add the bot.**
+   - **Channel:** create one, add the bot as an **admin** so it can post
+     (id looks like `-1001234567890`).
+   - **Group:** add the bot, make it an admin (id is negative).
+   - **Topic group** (forum supergroup, e.g. bumpt's "Bump" → "Bump Sigma"): add
+     the bot as admin; you'll also capture a per-topic `message_thread_id`.
    - **Direct message:** message the bot; your id is a positive number.
 
-   To read the id: send a message in the destination, open
-   `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser, and read
-   `result[].chat.id`. That value is `TELEGRAM_CHAT_ID`.
+3. **Read the ids via `getUpdates`.** Bots have group privacy on, so post a message
+   that mentions the bot: in the destination (and, for a topic group, **inside the
+   target topic**) send `/start@<your_bot_username>`. Then open
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` and read:
+   - `result[].message.chat.id` → **`TELEGRAM_CHAT_ID`** (channel/group = `-100…`)
+   - `result[].message.message_thread_id` → **`TELEGRAM_TOPIC_ID`** (topic groups
+     only; General has none)
 
-3. **Add the repo secrets.** GitHub → **Settings → Secrets and variables →
+   If `result` is `[]`, send the mention again and refresh.
+
+4. **Add the repo secrets.** GitHub → **Settings → Secrets and variables →
    Actions → New repository secret**:
-   - `TELEGRAM_BOT_TOKEN` = the BotFather token
-   - `TELEGRAM_CHAT_ID` = the destination id
-   - *(optional, Variables tab)* `PROD_URL` = the live URL
 
-4. **Verify.** Push any commit to `dev`; you should get a ✅/❌ Pre-deploy
-   message, then a Post-deploy message if the gate passes.
+   | Secret | Value |
+   |---|---|
+   | `TELEGRAM_BOT_TOKEN` | the BotFather token |
+   | `TELEGRAM_CHAT_ID` | the destination id (`-100…` for channels/supergroups) |
+   | `TELEGRAM_TOPIC_ID` | *(topic groups only)* the `message_thread_id`; omit otherwise |
 
-To send elsewhere later, just change `TELEGRAM_CHAT_ID`.
+   *(optional, Variables tab)* `PROD_URL` = the live URL, for the post-deploy subline.
+
+5. **Verify.** Push any commit to `dev` (or re-run the latest Actions run to pick up
+   new secrets). You should get a ✅/❌ Pre-deploy message, then a Post-deploy
+   message if the gate passes. The notify job logs print `telegram: sent` (and
+   `(topic <id>)` when routed to a topic) — or `skipping` if the secrets are absent.
+
+To send elsewhere later, change `TELEGRAM_CHAT_ID` (and `TELEGRAM_TOPIC_ID`).
