@@ -6,3 +6,4 @@ node_modules/
 
 # Next-generated, regenerated on build
 next-env.d.ts
+*.tsbuildinfo
