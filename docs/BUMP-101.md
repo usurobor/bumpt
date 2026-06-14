@@ -116,7 +116,7 @@ Stone Techno is in Essen (GDPR territory). Collecting no personal data keeps the
 
 ## 10. Build
 
-Throwaway implementation on the chosen stack: **Vercel** (per-founder card pages + About + one-tap) and **Supabase** (want-ins + scan counts). No NFC, auth, or Spotify. The implementation is disposable; the constitution (§5) and the card shape are the parts worth preserving.
+Throwaway implementation on **Vercel** (per-founder card pages + About + one-tap) with **Vercel Postgres (Neon)** for storage (want-ins + scan counts; one platform, one token, `DATABASE_URL` auto-injected). No NFC, auth, or Spotify. The implementation is disposable; the constitution (§5) and the card shape are the parts worth preserving. (The MVP stack stays Supabase per BUMP-100 §7 — it needs auth/realtime/storage the POC does not.)
 
 The build is acceptable only if:
 

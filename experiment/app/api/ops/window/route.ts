@@ -1,7 +1,6 @@
-import { db } from '@/lib/supabase';
+import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Open/close a member's exposure window. Every public scan inherits the open window's context.
 export async function POST(req: NextRequest) {
   const form = await req.formData();
   const token = String(form.get('token') ?? '');
@@ -12,20 +11,12 @@ export async function POST(req: NextRequest) {
   const action = form.get('action') ? String(form.get('action')) : null;
   const context = form.get('context') ? String(form.get('context')) : null;
 
-  // Close any open window for this member.
-  await db
-    .from('exposure_sessions')
-    .update({ ended_at: new Date().toISOString() })
-    .eq('member_id', member)
-    .is('ended_at', null);
-
-  // Start a new window unless stopping.
+  await sql`update exposure_sessions set ended_at = now() where member_id = ${member} and ended_at is null`;
   if (action !== 'stop' && context) {
-    await db.from('exposure_sessions').insert({ member_id: member, context });
+    await sql`insert into exposure_sessions (member_id, context) values (${member}, ${context})`;
   }
 
   return NextResponse.redirect(
-    new URL(`/ops/${encodeURIComponent(member)}?token=${encodeURIComponent(token)}`, req.url),
-    303
+    new URL(`/ops/${encodeURIComponent(member)}?token=${encodeURIComponent(token)}`, req.url), 303
   );
 }

@@ -1,4 +1,4 @@
-import { db } from '@/lib/supabase';
+import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 
@@ -13,16 +13,13 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.redirect(new URL('/thanks', req.url), 303);
   if (!deviceId) {
     deviceId = randomUUID();
-    res.cookies.set('bw_id', deviceId, {
-      httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 365,
-    });
+    res.cookies.set('bw_id', deviceId, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 365 });
   }
 
-  // unique(device_id) dedupes repeat taps; ignore duplicates.
-  await db.from('want_ins').upsert(
-    { device_id: deviceId, member_id, scan_id },
-    { onConflict: 'device_id', ignoreDuplicates: true }
-  );
+  await sql`
+    insert into want_ins (device_id, member_id, scan_id)
+    values (${deviceId}, ${member_id}, ${scan_id})
+    on conflict (device_id) do nothing`;
 
   return res;
 }

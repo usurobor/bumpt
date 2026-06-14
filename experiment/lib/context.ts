@@ -1,15 +1,10 @@
-import { db } from '@/lib/supabase';
+import { sql } from '@/lib/db';
 
-// A scan inherits the member's currently-open exposure window.
-// No open window => 'unknown' (excluded from the hook metric).
+// A scan inherits the member's currently-open exposure window; none => 'unknown'.
 export async function activeContext(memberId: string): Promise<string> {
-  const { data } = await db
-    .from('exposure_sessions')
-    .select('context')
-    .eq('member_id', memberId)
-    .is('ended_at', null)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data?.context ?? 'unknown';
+  const rows = await sql`
+    select context from exposure_sessions
+    where member_id = ${memberId} and ended_at is null
+    order by started_at desc limit 1`;
+  return rows[0]?.context ?? 'unknown';
 }
