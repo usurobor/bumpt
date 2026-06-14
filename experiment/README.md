@@ -1,6 +1,6 @@
 # Bump — Stone Techno experiment (throwaway)
 
-This app runs the field experiment specified in [`../docs/BUMP-101.md`](../docs/BUMP-101.md).
+This app runs the field experiment specified in [`../docs/BUMP-101.md`](https://github.com/usurobor/bumpt/blob/main/docs/BUMP-101.md).
 It is disposable: the only durable parts are the constitution (BUMP-000 §5) and the card shape.
 It is **not deployed yet** — it needs a database, env, and real-phone QA before the prereg tag.
 
