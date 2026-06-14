@@ -7,16 +7,27 @@
 //
 // Requires: app started with a seeded DB (members a/b/c) on SMOKE_BASE_URL.
 
+import { writeFileSync } from 'node:fs';
+
 const BASE = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000';
 
+let passed = 0;
 let failures = 0;
 function check(cond, msg) {
   if (cond) {
     console.log(`  ok   ${msg}`);
+    passed++;
   } else {
     console.error(`  FAIL ${msg}`);
     failures++;
   }
+}
+
+// Playwright-shaped stats so CI can build an aggregate line: expected = passed
+// as expected, unexpected = failed, skipped = test.skip()d (none here).
+function writeStats() {
+  const path = process.env.SMOKE_STATS ?? 'smoke-stats.json';
+  writeFileSync(path, JSON.stringify({ expected: passed, unexpected: failures, skipped: 0 }));
 }
 
 async function main() {
@@ -62,6 +73,7 @@ async function main() {
   });
   check(post2.status === 303, `repeat POST /api/want-in -> 303 (got ${post2.status})`);
 
+  writeStats();
   if (failures) {
     console.error(`\nsmoke: ${failures} check(s) failed`);
     process.exit(1);
@@ -71,5 +83,6 @@ async function main() {
 
 main().catch((err) => {
   console.error('smoke: crashed', err);
+  writeStats();
   process.exit(1);
 });
