@@ -1,0 +1,95 @@
+name: CI & gated deploy
+
+# Build + test the experiment app on every push to dev. Only if the gate is green
+# do we fast-forward the deploy branch (which Vercel watches) and cut a tagged
+# release. The deploy branch is a pure fast-forward mirror of dev — no extra commits.
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: experiment/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Start Postgres + Neon HTTP proxy
+        run: docker compose -f .ci/docker-compose.ci.yml up -d --wait
+
+      - name: Apply schema
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d main -v ON_ERROR_STOP=1 -f schema.sql
+
+      - name: Start app
+        env:
+          DATABASE_URL: postgres://postgres:postgres@db.localtest.me:5432/main
+          NEON_LOCAL_PROXY: "1"
+        run: |
+          echo "127.0.0.1 db.localtest.me" | sudo tee -a /etc/hosts
+          npm run start &
+          echo $! > /tmp/app.pid
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:3000/thanks >/dev/null && exit 0
+            sleep 2
+          done
+          echo "app did not become ready" >&2
+          exit 1
+
+      - name: Smoke test
+        run: npm run test:smoke
+
+      - name: Stop app
+        if: always()
+        run: kill "$(cat /tmp/app.pid)" 2>/dev/null || true
+
+      - name: Proxy logs on failure
+        if: failure()
+        run: docker compose -f .ci/docker-compose.ci.yml logs --no-color || true
+
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward deploy to dev
+        run: git push origin HEAD:deploy
+
+      - name: Tag + release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="deploy-$(date -u +%Y%m%d.%H%M%S)"
+          git tag -a "$TAG" -m "Gated deploy of ${GITHUB_SHA}"
+          git push origin "$TAG"
+          gh release create "$TAG" --title "$TAG" --generate-notes
