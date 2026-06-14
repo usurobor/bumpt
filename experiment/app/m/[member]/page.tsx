@@ -1,19 +1,18 @@
-import { db } from '@/lib/supabase';
+import { sql } from '@/lib/db';
 import { activeContext } from '@/lib/context';
 import { randomUUID } from 'crypto';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-// The worn-tag scan target. Renders the teaser node card and records one scan_event,
-// tagged with the member's active exposure context. Threads scan_id into About.
 export default async function Card({ params }: { params: { member: string } }) {
-  const { data: member } = await db.from('members').select('*').eq('id', params.member).maybeSingle();
+  const rows = await sql`select * from members where id = ${params.member}`;
+  const member = rows[0] as { id: string; bump_name: string; pic_url: string | null; static_line: string } | undefined;
   if (!member) notFound();
 
   const scanId = randomUUID();
   const context = await activeContext(member.id);
-  await db.from('scan_events').insert({ scan_id: scanId, member_id: member.id, context });
+  await sql`insert into scan_events (scan_id, member_id, context) values (${scanId}, ${member.id}, ${context})`;
 
   return (
     <main style={{ textAlign: 'center' }}>
