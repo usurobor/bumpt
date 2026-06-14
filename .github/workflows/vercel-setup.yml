@@ -1,0 +1,91 @@
+name: Vercel setup (one-off)
+
+# Manual, idempotent Vercel bring-up driven from a runner (which has open egress,
+# unlike the dev sandbox). Creates/links the project, sets env vars, applies the
+# DB schema, and deploys to production. Re-runnable.
+#
+# Required secret:  VERCEL_TOKEN
+# Recommended secrets: DATABASE_URL (Neon connection string), OPS_TOKEN
+# Optional secret:  VERCEL_SCOPE (team/org slug, only if the token is team-scoped)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: "Apply experiment/schema.sql to DATABASE_URL"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  vercel:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Preflight
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          [ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN secret is not set"; exit 1; }
+
+      - name: Link / create project (root = experiment)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+
+      - name: Set production env vars (idempotent)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          SCOPE: ${{ secrets.VERCEL_SCOPE }}
+          OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set_env() {
+            local name="$1" val="$2"
+            if [ -z "$val" ]; then echo "skip $name (empty secret)"; return; fi
+            vercel env rm "$name" production --yes --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"} >/dev/null 2>&1 || true
+            printf '%s' "$val" | vercel env add "$name" production --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+            echo "set $name"
+          }
+          set_env OPS_TOKEN "$OPS_TOKEN"
+          set_env DATABASE_URL "$DATABASE_URL"
+
+      - name: Apply DB schema
+        if: ${{ inputs.apply_schema }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then echo "skip schema (DATABASE_URL not set)"; exit 0; fi
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f schema.sql
+
+      - name: Deploy to production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          SCOPE: ${{ secrets.VERCEL_SCOPE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Vercel deploy"
+            echo ""
+            echo "Production URL: $url"
+            [ -n "$DATABASE_URL" ] || echo "⚠️ DATABASE_URL not set — DB-backed routes will 500 until you add it and re-run."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed: $url"
