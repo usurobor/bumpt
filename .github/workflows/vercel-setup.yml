@@ -75,8 +75,8 @@ jobs:
           vercel env pull /tmp/env.prod --environment=production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" 2>&1 | tail -2 || true
           echo "pulled $( [ -f /tmp/env.prod ] && grep -c '=' /tmp/env.prod || echo 0 ) env var(s)"
           echo "keys: $(cut -d= -f1 /tmp/env.prod 2>/dev/null | tr '\n' ' ')"
-          # Tolerant of optional `export ` and leading whitespace; grep/sed don't expand $.
-          getcur() { [ -f /tmp/env.prod ] || return; sed -n "s/^[[:space:]]*\(export[[:space:]]\+\)\?$1=//p" /tmp/env.prod | head -1 | sed 's/^"//; s/"$//'; }
+          # Robust dotenv read (python; handles quoting/export/$ in values).
+          getcur() { python3 .ci/readenv.py "$1" /tmp/env.prod; }
 
           # --- OPS_TOKEN: existing -> provided -> generated ---
           OPS="$(getcur OPS_TOKEN)"; NEW_OPS=
