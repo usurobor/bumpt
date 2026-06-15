@@ -3,7 +3,7 @@ name: Vercel domain (one-off)
 # Attaches bumpt.io (+ www) to the Vercel project and reports verification/SSL.
 # Nameservers already point to Vercel, so attaching is all that's left.
 # workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
-# recheck: registry delegation + Vercel NS record (12h later)
+# recheck: DNSSEC/DS + resolver status (diagnose 12h NXDOMAIN)
 
 on:
   workflow_dispatch:
@@ -47,13 +47,13 @@ jobs:
           api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
           echo "== project domain (bumpt.io) =="
           api "https://api.vercel.com/v9/projects/bumpt/domains/bumpt.io$q"
-          echo "== delegation @ .io registry (source of truth) =="
-          dig +short NS bumpt.io @a0.nic.io || true
-          echo "== NS @ public resolver (8.8.8.8) =="
-          dig +short NS bumpt.io @8.8.8.8 || true
-          echo "== does Vercel's nameserver hold the record? =="
-          dig +short A bumpt.io @ns1.vercel-dns.com || true
-          echo "== apex A @ public resolver =="
-          dig +short A bumpt.io @8.8.8.8 || true
+          echo "== registry delegation (NS referral) =="
+          dig NS bumpt.io @a0.nic.io +noall +authority +additional || true
+          echo "== registry DNSSEC (DS) — leftover DS would block resolution =="
+          dig DS bumpt.io @a0.nic.io +noall +authority +answer || true
+          echo "== resolve via Google (status: NXDOMAIN vs SERVFAIL is the tell) =="
+          dig bumpt.io @8.8.8.8 +noall +comments +answer || true
+          echo "== A straight from Vercel's nameserver =="
+          dig A bumpt.io @ns1.vercel-dns.com +noall +comments +answer || true
           echo "== HTTPS =="
           curl -sS -m 15 -o /dev/null -w 'https://bumpt.io -> HTTP %{http_code}\n' https://bumpt.io || echo "bumpt.io not reachable yet"
