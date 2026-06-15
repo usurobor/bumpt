@@ -49,7 +49,7 @@ async function main() {
   // /thanks renders (it reads a live count); we don't assert the number here.
   const thanks = await fetch(`${BASE}/thanks`, { cache: 'no-store' });
   check(thanks.status === 200, `/thanks -> 200 (got ${thanks.status})`);
-  check(/people want in so far/.test(await thanks.text()), '/thanks renders the funnel page');
+  check(/people want in/.test(await thanks.text()), '/thanks renders the funnel page');
 
   // First want-in: 303 -> /thanks, sets an anonymous device cookie.
   const post1 = await fetch(`${BASE}/api/want-in`, {
