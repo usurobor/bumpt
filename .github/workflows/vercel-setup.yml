@@ -63,20 +63,24 @@ jobs:
           getcur() { [ -f /tmp/env.prod ] && grep "^$1=" /tmp/env.prod | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//'; }
 
           # --- OPS_TOKEN: existing -> provided -> generated ---
-          OPS="$(getcur OPS_TOKEN)"; [ -z "$OPS" ] && OPS="$IN_OPS_TOKEN"
-          [ -z "$OPS" ] && OPS="$(openssl rand -hex 24)"
+          OPS="$(getcur OPS_TOKEN)"; NEW_OPS=
+          if [ -z "$OPS" ]; then OPS="${IN_OPS_TOKEN:-$(openssl rand -hex 24)}"; NEW_OPS=1; fi
           echo "::add-mask::$OPS"
 
-          # --- DATABASE_URL: existing -> provided -> provision via Neon ---
-          DB="$(getcur DATABASE_URL)"; [ -z "$DB" ] && DB="$IN_DATABASE_URL"
-          if [ -z "$DB" ] && [ -n "$NEON_API_KEY" ]; then
-            echo "no DATABASE_URL found — provisioning a Neon project…"
-            resp="$(curl -sS -X POST https://console.neon.tech/api/v2/projects \
-              -H "Authorization: Bearer $NEON_API_KEY" -H "Content-Type: application/json" \
-              -d '{"project":{"name":"bumpt-poc"}}')"
-            DB="$(printf '%s' "$resp" | jq -r '.connection_uris[0].connection_uri // empty')"
-            [ -n "$DB" ] || { echo "::error::Neon provisioning failed: $(printf '%s' "$resp" | jq -r '.message // "unknown error"')"; exit 1; }
-            echo "Neon project provisioned."
+          # --- DATABASE_URL: existing (incl. Vercel Postgres) -> provided -> Neon provision ---
+          DB="$(getcur DATABASE_URL)"; [ -z "$DB" ] && DB="$(getcur POSTGRES_URL)"; NEW_DB=
+          if [ -z "$DB" ]; then
+            DB="$IN_DATABASE_URL"
+            if [ -z "$DB" ] && [ -n "$NEON_API_KEY" ]; then
+              echo "no DATABASE_URL found — provisioning a Neon project…"
+              resp="$(curl -sS -X POST https://console.neon.tech/api/v2/projects \
+                -H "Authorization: Bearer $NEON_API_KEY" -H "Content-Type: application/json" \
+                -d '{"project":{"name":"bumpt-poc"}}')"
+              DB="$(printf '%s' "$resp" | jq -r '.connection_uris[0].connection_uri // empty')"
+              [ -n "$DB" ] || { echo "::error::Neon provisioning failed: $(printf '%s' "$resp" | jq -r '.message // "unknown error"')"; exit 1; }
+              echo "Neon project provisioned."
+            fi
+            [ -n "$DB" ] && NEW_DB=1
           fi
           [ -n "$DB" ] && echo "::add-mask::$DB"
 
@@ -86,8 +90,9 @@ jobs:
             printf '%s' "$2" | vercel env add "$1" production --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null
             echo "set $1 on Vercel (production)"
           }
-          setenv OPS_TOKEN "$OPS"
-          setenv DATABASE_URL "$DB"
+          # Only write env we resolved ourselves; never overwrite integration-managed vars.
+          [ -n "$NEW_OPS" ] && setenv OPS_TOKEN "$OPS"
+          [ -n "$NEW_DB" ] && setenv DATABASE_URL "$DB"
 
           printf '%s' "$DB" > /tmp/dburl
           echo "DB_RESOLVED=$([ -n "$DB" ] && echo yes || echo no)" >> "$GITHUB_ENV"
