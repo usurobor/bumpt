@@ -20,13 +20,14 @@ The branches are **disjoint by file** (no `experiment/` on `main`; no `docs/` on
 ## Flow
 
 ```
-idea → spec (main) → code (dev) → CI gate (dev) → promote (dev → deploy) → Vercel deploys
+idea → spec (main) → code (dev) → CI gate (dev) → promote (dev → deploy) + tag + release → vercel deploy --prod
 ```
 
 Specs and decisions land on `main`. Code lands on `dev`. Every push to `dev`
 runs the CI gate; only on green does the pipeline fast-forward `dev → deploy`,
-tag the release, and cut release notes. Vercel's Git integration then builds
-`deploy:experiment/` and ships.
+tag the release, cut release notes, and **ship to Vercel via the CLI**
+(`vercel deploy --prod`, using `VERCEL_TOKEN`). The deploy is a *consequence of a
+green gate*, not a separate Vercel build — one chain, one source of truth.
 
 ## CI gate (on `dev`)
 
@@ -44,14 +45,27 @@ Only a green gate promotes `dev → deploy`. Status is reported to Telegram
 (green-short / red-detailed) by the same workflow — see
 [`CI-TELEGRAM.md`](./CI-TELEGRAM.md).
 
-## Notes specific to bumpt
+## Deploy mechanism (CLI, not Git integration)
 
-- **Vercel builds from source**, so `deploy` carries *source*, not a pre-built
-  artifact. Vercel's Git integration is the release mechanism — no separate
-  release workflow or deploy key needed.
-- **`main` also carries the cnos agent hub** (`.cn-sigma/` activation channel +
-  `.github/` wake), which must live on the default branch for the wake to run and
-  for home to read the channel.
+The pipeline ships to Vercel with the **Vercel CLI** from the deploy job
+(`vercel deploy --prod`), *not* Vercel's Git integration. Reasons, learned the
+hard way:
+
+- The CI gate stays the single source of truth — Vercel never builds outside it.
+- A Vercel token can deploy but **cannot provision Postgres**; the DB (Neon, via
+  Vercel Postgres) is connected once in the dashboard. Its `DATABASE_URL` is
+  injected into the project and read by the app at runtime.
+- The **`deploy` branch + `deploy-<ts>` tag** remain the durable "what's live"
+  record and release anchor, even though the actual ship is the CLI step.
+- First-time bring-up (project create, env, schema load) is the one-off
+  `vercel-setup.yml` (`workflow_dispatch`). Schema is applied through an
+  OPS-token-guarded `/api/migrate` route that runs `schema.sql` via the app's
+  runtime DB — the pulled `vercel env` dotenv is binary-flagged and unparseable,
+  so don't try to extract `DATABASE_URL` in CI.
+
+**`main` also carries the cnos agent hub** (`.cn-sigma/` activation channel +
+`.github/` wake), which must live on the default branch for the wake to run and
+for home to read the channel.
 
 ## When to harden
 
