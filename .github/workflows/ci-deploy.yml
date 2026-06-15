@@ -131,6 +131,18 @@ jobs:
           git push origin "$TAG"
           gh release create "$TAG" --title "$TAG" --generate-notes
 
+      - name: Deploy to Vercel (production)
+        working-directory: experiment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          SCOPE: ${{ secrets.VERCEL_SCOPE }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then echo "VERCEL_TOKEN not set — skipping Vercel deploy"; exit 0; fi
+          npm i -g vercel@latest >/dev/null 2>&1
+          vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+          url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"})"
+          echo "Vercel production: $url"
+
   # Pre-deploy notification: runs after the gate regardless of result.
   # Green is short (headline + aggregate); red is detailed (per-step breakdown).
   notify-pre:
@@ -218,8 +230,9 @@ jobs:
             *)         header="❓ Post-deploy ${RESULT}";;
           esac
 
+          target="${PROD_URL:-https://bumpt-nine.vercel.app}"
           subline="bumpt@${tag:-$GITHUB_REF_NAME}:${sha7}"
-          [[ -n "${PROD_URL:-}" ]] && subline="${subline} → ${PROD_URL}"
+          [[ -n "$target" ]] && subline="${subline} → ${target}"
 
           export TG_HEADER="$header"
           export TG_SUBLINE="$subline"
