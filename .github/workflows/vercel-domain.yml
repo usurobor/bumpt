@@ -3,6 +3,7 @@ name: Vercel domain (one-off)
 # Attaches bumpt.io (+ www) to the Vercel project and reports verification/SSL.
 # Nameservers already point to Vercel, so attaching is all that's left.
 # workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
+# recheck: nameserver propagation + SSL
 
 on:
   workflow_dispatch:
@@ -46,3 +47,9 @@ jobs:
           api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
           echo "== project domain (bumpt.io) =="
           api "https://api.vercel.com/v9/projects/bumpt/domains/bumpt.io$q"
+          echo "== public DNS =="
+          echo "NS:";  dig +short NS bumpt.io @1.1.1.1 || true
+          echo "A:";   dig +short bumpt.io @1.1.1.1 || true
+          echo "== HTTPS =="
+          curl -sS -m 15 -o /dev/null -w 'https://bumpt.io -> HTTP %{http_code}\n' https://bumpt.io || echo "bumpt.io not reachable yet"
+          curl -sS -m 15 -o /dev/null -w 'https://www.bumpt.io -> HTTP %{http_code}\n' https://www.bumpt.io || echo "www not reachable yet"
