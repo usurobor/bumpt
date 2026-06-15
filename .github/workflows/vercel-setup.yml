@@ -12,6 +12,7 @@ on:
   workflow_dispatch:
   # Temporary: lets edits to this file drive the one-off run (the dev sandbox
   # can't dispatch via API). Remove once setup is confirmed.
+  # trigger: migrate with comment-stripping fix
   push:
     branches: [dev]
     paths:
