@@ -72,7 +72,8 @@ jobs:
           scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
 
           # Pull existing project env so re-runs reuse it (idempotent).
-          vercel env pull /tmp/env.prod --environment=production --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null 2>&1 || true
+          vercel env pull /tmp/env.prod --environment=production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" 2>&1 | tail -2 || true
+          echo "pulled $( [ -f /tmp/env.prod ] && grep -c '=' /tmp/env.prod || echo 0 ) env var(s)"
           getcur() { [ -f /tmp/env.prod ] && grep "^$1=" /tmp/env.prod | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//'; }
 
           # --- OPS_TOKEN: existing -> provided -> generated ---
