@@ -1,0 +1,41 @@
+name: Vercel domain (one-off)
+
+# Attaches bumpt.io (+ www) to the Vercel project and reports verification/SSL.
+# Nameservers already point to Vercel, so attaching is all that's left.
+# workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/vercel-domain.yml
+
+permissions:
+  contents: read
+
+jobs:
+  domain:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiment
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SCOPE: ${{ secrets.VERCEL_SCOPE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Attach domains
+        run: |
+          [ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN not set"; exit 1; }
+          npm i -g vercel@latest >/dev/null 2>&1
+          vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+          for d in bumpt.io www.bumpt.io; do
+            echo "== add $d =="
+            vercel domains add "$d" bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"} || true
+          done
+          echo "== inspect bumpt.io =="
+          vercel domains inspect bumpt.io --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"} || true
