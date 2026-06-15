@@ -57,6 +57,12 @@ jobs:
       - name: Link / create project (root = experiment)
         run: vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
 
+      - name: Diagnose project env (keys only)
+        run: |
+          scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
+          echo "== Production env on the bumpt project (names/flags only) =="
+          vercel env ls production --token "$VERCEL_TOKEN" "${scope_args[@]}" || true
+
       - name: Resolve & set production env
         env:
           IN_DATABASE_URL: ${{ secrets.DATABASE_URL }}
