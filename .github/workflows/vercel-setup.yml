@@ -22,6 +22,12 @@ on:
         description: "Apply experiment/schema.sql to the database"
         type: boolean
         default: true
+  # Temporary: lets edits to this file drive the one-off run, since the dev
+  # sandbox can't dispatch workflows via API. Remove once setup is confirmed.
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/vercel-setup.yml
 
 permissions:
   contents: read
@@ -98,7 +104,7 @@ jobs:
           echo "DB_RESOLVED=$([ -n "$DB" ] && echo yes || echo no)" >> "$GITHUB_ENV"
 
       - name: Apply DB schema
-        if: ${{ inputs.apply_schema }}
+        if: ${{ inputs.apply_schema != 'false' }}
         run: |
           DB="$(cat /tmp/dburl 2>/dev/null || true)"
           if [ -z "$DB" ]; then echo "skip schema (no database resolved)"; exit 0; fi
