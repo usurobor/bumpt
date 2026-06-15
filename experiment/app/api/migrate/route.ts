@@ -13,11 +13,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.text();
-  // The Neon HTTP driver runs one statement per call; split the script on ';'.
-  const statements = body
+  // Strip `--` line comments first (schema.sql has ';' inside comments), then
+  // split into statements — the Neon HTTP driver runs one statement per call.
+  const stripped = body
+    .split('\n')
+    .map((l) => {
+      const i = l.indexOf('--');
+      return i >= 0 ? l.slice(0, i) : l;
+    })
+    .join('\n');
+  const statements = stripped
     .split(';')
     .map((s) => s.trim())
-    .filter((s) => s && !s.split('\n').every((l) => l.trim().startsWith('--') || l.trim() === ''));
+    .filter((s) => s.length > 0);
 
   const ran: string[] = [];
   try {
