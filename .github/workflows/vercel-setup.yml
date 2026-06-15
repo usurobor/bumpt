@@ -1,30 +1,17 @@
 name: Vercel setup (one-off)
 
 # Manual, idempotent Vercel bring-up from a runner (open egress; the dev sandbox
-# has none). Links/creates the project, resolves production env (auto-generating
-# OPS_TOKEN and optionally provisioning a Neon DB), applies schema.sql, deploys.
+# has none). Links/creates the project, ensures OPS_TOKEN, deploys to production,
+# then applies schema.sql via the app's OPS-guarded /api/migrate endpoint (which
+# uses the app's runtime DATABASE_URL — no env-file extraction needed).
 #
 # Required secret:  VERCEL_TOKEN
-# Optional secrets:
-#   DATABASE_URL  - Neon/Postgres connection string. If absent and NEON_API_KEY is
-#                   set, a Neon project is provisioned automatically.
-#   NEON_API_KEY  - to auto-provision the DB (neon.tech -> Account -> API Keys).
-#   OPS_TOKEN     - /ops gate token; auto-generated if absent.
-#   VERCEL_SCOPE  - team/org slug, only if the token is team-scoped.
-#
-# Resolved env is stored on the Vercel project; re-runs reuse it. Nothing secret is
-# printed (the repo is public); generated/provisioned values are masked in logs.
+# Optional secrets: OPS_TOKEN (generated if absent), VERCEL_SCOPE (team slug)
 
 on:
   workflow_dispatch:
-    inputs:
-      apply_schema:
-        description: "Apply experiment/schema.sql to the database"
-        type: boolean
-        default: true
-  # Temporary: lets edits to this file drive the one-off run, since the dev
-  # sandbox can't dispatch workflows via API. Remove once setup is confirmed.
-  # rerun: DB now connected to bumpt — apply schema + redeploy
+  # Temporary: lets edits to this file drive the one-off run (the dev sandbox
+  # can't dispatch via API). Remove once setup is confirmed.
   push:
     branches: [dev]
     paths:
@@ -57,91 +44,43 @@ jobs:
       - name: Link / create project (root = experiment)
         run: vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
 
-      - name: Diagnose project env (keys only)
-        run: |
-          scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
-          echo "== Production env on the bumpt project (names/flags only) =="
-          vercel env ls production --token "$VERCEL_TOKEN" "${scope_args[@]}" || true
-
-      - name: Resolve & set production env
+      - name: Ensure OPS_TOKEN (production)
         env:
-          IN_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           IN_OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
-          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
           scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
-
-          # Pull existing project env so re-runs reuse it (idempotent).
-          vercel env pull /tmp/env.prod --environment=production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" 2>&1 | tail -2 || true
-          echo "pulled $( [ -f /tmp/env.prod ] && grep -c '=' /tmp/env.prod || echo 0 ) env var(s)"
-          echo "keys: $(cut -d= -f1 /tmp/env.prod 2>/dev/null | tr '\n' ' ')"
-          # Robust dotenv read (python; handles quoting/export/$ in values).
-          getcur() { python3 .ci/readenv.py "$1" /tmp/env.prod; }
-          # DBG: raw bytes of the DATABASE_URL key (key only, no value) + reader result
-          echo "DBG bytes:"; grep -a DATABASE_URL /tmp/env.prod | head -1 | cut -c1-14 | od -c | head -2
-          echo "DBG db_bytes=$(python3 .ci/readenv.py DATABASE_URL /tmp/env.prod 2>/tmp/rerr | wc -c) rerr=[$(cat /tmp/rerr 2>/dev/null)]"
-
-          # --- OPS_TOKEN: existing -> provided -> generated ---
-          OPS="$(getcur OPS_TOKEN)"; NEW_OPS=
-          if [ -z "$OPS" ]; then OPS="${IN_OPS_TOKEN:-$(openssl rand -hex 24)}"; NEW_OPS=1; fi
+          OPS="${IN_OPS_TOKEN:-$(openssl rand -hex 24)}"
           echo "::add-mask::$OPS"
-
-          # --- DATABASE_URL: plain -> POSTGRES_URL -> any prefixed integration var -> provided -> Neon ---
-          have_plain="$(getcur DATABASE_URL)"
-          DB="$have_plain"
-          [ -z "$DB" ] && DB="$(getcur POSTGRES_URL)"
-          if [ -z "$DB" ] && [ -f /tmp/env.prod ]; then
-            # e.g. STORAGE_DATABASE_URL from a prefixed Vercel Postgres/Neon integration
-            DB="$(grep -E '(^|_)(DATABASE_URL|POSTGRES_URL)=' /tmp/env.prod | grep -Ev 'UNPOOLED|NON_POOLING|PRISMA' | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//')"
-            [ -n "$DB" ] && echo "found a Postgres URL from the connected integration (prefixed var)"
-          fi
-          if [ -z "$DB" ]; then
-            DB="$IN_DATABASE_URL"
-            if [ -z "$DB" ] && [ -n "$NEON_API_KEY" ]; then
-              echo "no DATABASE_URL found — provisioning a Neon project…"
-              resp="$(curl -sS -X POST https://console.neon.tech/api/v2/projects \
-                -H "Authorization: Bearer $NEON_API_KEY" -H "Content-Type: application/json" \
-                -d '{"project":{"name":"bumpt-poc"}}')"
-              DB="$(printf '%s' "$resp" | jq -r '.connection_uris[0].connection_uri // empty')"
-              [ -n "$DB" ] || { echo "::error::Neon provisioning failed: $(printf '%s' "$resp" | jq -r '.message // "unknown error"')"; exit 1; }
-              echo "Neon project provisioned."
-            fi
-          fi
-          [ -n "$DB" ] && echo "::add-mask::$DB"
-          # Ensure the app's expected var name (DATABASE_URL) exists when we resolved it another way.
-          NEW_DB=; { [ -n "$DB" ] && [ -z "$have_plain" ]; } && NEW_DB=1
-
-          setenv() { # name value
-            [ -z "$2" ] && return
-            vercel env rm "$1" production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null 2>&1 || true
-            printf '%s' "$2" | vercel env add "$1" production --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null
-            echo "set $1 on Vercel (production)"
-          }
-          # Only write env we resolved ourselves; never overwrite integration-managed vars.
-          [ -n "$NEW_OPS" ] && setenv OPS_TOKEN "$OPS"
-          [ -n "$NEW_DB" ] && setenv DATABASE_URL "$DB"
-
-          printf '%s' "$DB" > /tmp/dburl
-          echo "DB_RESOLVED=$([ -n "$DB" ] && echo yes || echo no)" >> "$GITHUB_ENV"
-
-      - name: Apply DB schema
-        if: ${{ inputs.apply_schema != 'false' }}
-        run: |
-          DB="$(cat /tmp/dburl 2>/dev/null || true)"
-          if [ -z "$DB" ]; then echo "skip schema (no database resolved)"; exit 0; fi
-          psql "$DB" -v ON_ERROR_STOP=1 -f schema.sql
-          echo "schema applied"
+          vercel env rm OPS_TOKEN production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null 2>&1 || true
+          printf '%s' "$OPS" | vercel env add OPS_TOKEN production --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null
+          echo "OPS=$OPS" >> "$GITHUB_ENV"
+          echo "OPS_TOKEN set on Vercel (production)"
 
       - name: Deploy to production
+        id: deploy
         run: |
           scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
           url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" "${scope_args[@]}")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed: $url"
+
+      - name: Apply schema via /api/migrate
+        run: |
+          url="${{ steps.deploy.outputs.url }}"
+          echo "POST $url/api/migrate"
+          code=$(curl -sS -o /tmp/mig.json -w '%{http_code}' -X POST \
+            "$url/api/migrate?token=$OPS" \
+            -H 'content-type: text/plain' --data-binary @schema.sql)
+          echo "HTTP $code"; cat /tmp/mig.json 2>/dev/null; echo
+          [ "$code" = "200" ] || { echo "::error::migrate failed (HTTP $code)"; exit 1; }
+
+      - name: Summary
+        run: |
           {
-            echo "### Vercel deploy"
+            echo "### Vercel setup"
             echo ""
-            echo "**Production URL:** $url"
-            echo ""
-            if [ "$DB_RESOLVED" = yes ]; then echo "- Database: configured ✓"; else echo "- ⚠️ No database — set DATABASE_URL or NEON_API_KEY and re-run."; fi
-            echo "- OPS_TOKEN is stored on Vercel (Settings → Environment Variables → reveal). Not printed (public repo)."
+            echo "**Production URL:** ${{ steps.deploy.outputs.url }}"
+            echo "- Alias: https://bumpt-nine.vercel.app"
+            echo "- Schema applied via /api/migrate ✓"
+            echo "- OPS_TOKEN stored on Vercel (Settings → Environment Variables)."
           } >> "$GITHUB_STEP_SUMMARY"
