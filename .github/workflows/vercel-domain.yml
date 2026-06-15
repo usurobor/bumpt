@@ -28,14 +28,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Attach domains
+      - name: Attach domains (Vercel REST API)
         run: |
           [ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN not set"; exit 1; }
-          npm i -g vercel@latest >/dev/null 2>&1
-          vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+          auth=(-H "Authorization: Bearer $VERCEL_TOKEN")
+          # Resolve the team that owns the project (token is team-bound).
+          TID=$(curl -sS "${auth[@]}" https://api.vercel.com/v2/teams | jq -r '.teams[]? | select(.slug=="usurobor-1186s-projects") | .id')
+          q=""; [ -n "$TID" ] && [ "$TID" != "null" ] && q="?teamId=$TID"
+          echo "teamId: ${TID:-<none>}"
+          api() { curl -sS -w '\n[HTTP %{http_code}]\n' "${auth[@]}" "$@"; }
           for d in bumpt.io www.bumpt.io; do
             echo "== add $d =="
-            vercel domains add "$d" bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"} || true
+            api -X POST "https://api.vercel.com/v10/projects/bumpt/domains$q" \
+              -H "Content-Type: application/json" -d "{\"name\":\"$d\"}"
           done
-          echo "== inspect bumpt.io =="
-          vercel domains inspect bumpt.io --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"} || true
+          echo "== config (bumpt.io) =="
+          api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
+          echo "== project domain (bumpt.io) =="
+          api "https://api.vercel.com/v9/projects/bumpt/domains/bumpt.io$q"
