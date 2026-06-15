@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'Bump',
+  title: 'bump',
+  description: 'you get in by being there.',
   // The experiment must not be indexed.
   robots: { index: false, follow: false },
 };
