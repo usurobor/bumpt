@@ -65,13 +65,22 @@ jobs:
           echo "Deployed: $url"
 
       - name: Apply schema via /api/migrate
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
         run: |
-          url="${{ steps.deploy.outputs.url }}"
+          # Use the public production alias (the deployment-hash URL is gated by
+          # Vercel deployment protection). Settle briefly for the alias to swing.
+          url="${PROD_URL:-https://bumpt-nine.vercel.app}"
           echo "POST $url/api/migrate"
-          code=$(curl -sS -o /tmp/mig.json -w '%{http_code}' -X POST \
-            "$url/api/migrate?token=$OPS" \
-            -H 'content-type: text/plain' --data-binary @schema.sql)
-          echo "HTTP $code"; cat /tmp/mig.json 2>/dev/null; echo
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -sS -o /tmp/mig.json -w '%{http_code}' -X POST \
+              "$url/api/migrate?token=$OPS" \
+              -H 'content-type: text/plain' --data-binary @schema.sql || echo 000)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          cat /tmp/mig.json 2>/dev/null; echo
           [ "$code" = "200" ] || { echo "::error::migrate failed (HTTP $code)"; exit 1; }
 
       - name: Summary
