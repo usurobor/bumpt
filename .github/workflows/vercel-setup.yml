@@ -77,6 +77,9 @@ jobs:
           echo "keys: $(cut -d= -f1 /tmp/env.prod 2>/dev/null | tr '\n' ' ')"
           # Robust dotenv read (python; handles quoting/export/$ in values).
           getcur() { python3 .ci/readenv.py "$1" /tmp/env.prod; }
+          # DBG: raw bytes of the DATABASE_URL key (key only, no value) + reader result
+          echo "DBG bytes:"; grep -a DATABASE_URL /tmp/env.prod | head -1 | cut -c1-14 | od -c | head -2
+          echo "DBG db_bytes=$(python3 .ci/readenv.py DATABASE_URL /tmp/env.prod 2>/tmp/rerr | wc -c) rerr=[$(cat /tmp/rerr 2>/dev/null)]"
 
           # --- OPS_TOKEN: existing -> provided -> generated ---
           OPS="$(getcur OPS_TOKEN)"; NEW_OPS=
