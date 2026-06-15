@@ -3,7 +3,7 @@ name: Vercel domain (one-off)
 # Attaches bumpt.io (+ www) to the Vercel project and reports verification/SSL.
 # Nameservers already point to Vercel, so attaching is all that's left.
 # workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
-# recheck: DNSSEC/DS + resolver status (diagnose 12h NXDOMAIN)
+# fix: create the Vercel-DNS zone (team domain) so the NS stop REFUSED
 
 on:
   workflow_dispatch:
@@ -43,6 +43,8 @@ jobs:
             api -X POST "https://api.vercel.com/v10/projects/bumpt/domains$q" \
               -H "Content-Type: application/json" -d "{\"name\":\"$d\"}"
           done
+          echo "== ensure Vercel-DNS zone (team-level domain, so the NS actually serve it) =="
+          api -X POST "https://api.vercel.com/v5/domains$q" -H "Content-Type: application/json" -d '{"name":"bumpt.io"}'
           echo "== config (bumpt.io) =="
           api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
           echo "== project domain (bumpt.io) =="
