@@ -74,8 +74,15 @@ jobs:
           if [ -z "$OPS" ]; then OPS="${IN_OPS_TOKEN:-$(openssl rand -hex 24)}"; NEW_OPS=1; fi
           echo "::add-mask::$OPS"
 
-          # --- DATABASE_URL: existing (incl. Vercel Postgres) -> provided -> Neon provision ---
-          DB="$(getcur DATABASE_URL)"; [ -z "$DB" ] && DB="$(getcur POSTGRES_URL)"; NEW_DB=
+          # --- DATABASE_URL: plain -> POSTGRES_URL -> any prefixed integration var -> provided -> Neon ---
+          have_plain="$(getcur DATABASE_URL)"
+          DB="$have_plain"
+          [ -z "$DB" ] && DB="$(getcur POSTGRES_URL)"
+          if [ -z "$DB" ] && [ -f /tmp/env.prod ]; then
+            # e.g. STORAGE_DATABASE_URL from a prefixed Vercel Postgres/Neon integration
+            DB="$(grep -E '(^|_)(DATABASE_URL|POSTGRES_URL)=' /tmp/env.prod | grep -Ev 'UNPOOLED|NON_POOLING|PRISMA' | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//')"
+            [ -n "$DB" ] && echo "found a Postgres URL from the connected integration (prefixed var)"
+          fi
           if [ -z "$DB" ]; then
             DB="$IN_DATABASE_URL"
             if [ -z "$DB" ] && [ -n "$NEON_API_KEY" ]; then
@@ -87,9 +94,10 @@ jobs:
               [ -n "$DB" ] || { echo "::error::Neon provisioning failed: $(printf '%s' "$resp" | jq -r '.message // "unknown error"')"; exit 1; }
               echo "Neon project provisioned."
             fi
-            [ -n "$DB" ] && NEW_DB=1
           fi
           [ -n "$DB" ] && echo "::add-mask::$DB"
+          # Ensure the app's expected var name (DATABASE_URL) exists when we resolved it another way.
+          NEW_DB=; { [ -n "$DB" ] && [ -z "$have_plain" ]; } && NEW_DB=1
 
           setenv() { # name value
             [ -z "$2" ] && return
