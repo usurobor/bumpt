@@ -24,6 +24,7 @@ on:
         default: true
   # Temporary: lets edits to this file drive the one-off run, since the dev
   # sandbox can't dispatch workflows via API. Remove once setup is confirmed.
+  # rerun: post-DB-connect (apply schema + redeploy)
   push:
     branches: [dev]
     paths:
