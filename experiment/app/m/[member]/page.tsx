@@ -21,8 +21,17 @@ export default async function Card({ params }: { params: { member: string } }) {
       ) : null}
       <h1 style={{ marginBottom: 4 }}>{member.bump_name}</h1>
       <p style={{ color: '#666', marginTop: 0 }}>{member.static_line}</p>
-      <p style={{ marginTop: 32 }}>
-        <a href={`/about?m=${encodeURIComponent(member.id)}&s=${encodeURIComponent(scanId)}`}>What is this?</a>
+
+      <p style={{ marginTop: 28 }}>Bump is in-person only.</p>
+      <p style={{ color: '#666', marginTop: 0 }}>Ask {member.bump_name} to bump you in.</p>
+
+      <p style={{ marginTop: 28 }}>
+        <a
+          href={`/about?m=${encodeURIComponent(member.id)}&s=${encodeURIComponent(scanId)}`}
+          style={{ display: 'inline-block', padding: '12px 22px', border: '1px solid #111', borderRadius: 8, textDecoration: 'none', color: '#111' }}
+        >
+          Ask to bump
+        </a>
       </p>
     </main>
   );
