@@ -1,0 +1,98 @@
+name: Migrate prod (one-off)
+
+# One-off: apply experiment/schema.sql to the LIVE DB via the OPS-guarded
+# /api/migrate endpoint, idempotently (issue #5 schema: bump_request_events,
+# context CHECKs, scan_events unique index, test member). Self-triggers on push
+# to this file (the sandbox/integration token can't dispatch workflows via API).
+#
+# Required secret:  VERCEL_TOKEN
+# Optional secrets: OPS_TOKEN (generated + set on Vercel if absent), VERCEL_SCOPE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/migrate-prod.yml
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiment
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SCOPE: ${{ secrets.VERCEL_SCOPE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Preflight
+        run: '[ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN secret is not set"; exit 1; }'
+
+      - name: Link project (root = experiment)
+        run: vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+
+      - name: Ensure OPS_TOKEN (production)
+        env:
+          IN_OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+        run: |
+          scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
+          OPS="${IN_OPS_TOKEN:-$(openssl rand -hex 24)}"
+          echo "::add-mask::$OPS"
+          vercel env rm OPS_TOKEN production --yes --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null 2>&1 || true
+          printf '%s' "$OPS" | vercel env add OPS_TOKEN production --token "$VERCEL_TOKEN" "${scope_args[@]}" >/dev/null
+          echo "OPS=$OPS" >> "$GITHUB_ENV"
+          echo "OPS_TOKEN set on Vercel (production)"
+
+      - name: Deploy production (so OPS token + latest code are live)
+        run: |
+          scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
+          url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" "${scope_args[@]}")"
+          echo "Deployed: $url"
+
+      - name: Apply schema via /api/migrate
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
+        run: |
+          url="${PROD_URL:-https://bumpt-nine.vercel.app}"
+          echo "POST $url/api/migrate"
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -sS -o /tmp/mig.json -w '%{http_code}' -X POST \
+              "$url/api/migrate?token=$OPS" \
+              -H 'content-type: text/plain' --data-binary @schema.sql || echo 000)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "migrate response:"; cat /tmp/mig.json 2>/dev/null; echo
+          [ "$code" = "200" ] || { echo "::error::migrate failed (HTTP $code)"; exit 1; }
+
+      - name: Verify migration
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
+        run: |
+          url="${PROD_URL:-https://bumpt-nine.vercel.app}"
+          t=$(curl -sS -o /dev/null -w '%{http_code}' "$url/m/test")
+          z=$(curl -sS -o /dev/null -w '%{http_code}' "$url/m/zzz-nope")
+          echo "/m/test -> $t (want 200); /m/zzz-nope -> $z (want 404)"
+          [ "$t" = "200" ] && [ "$z" = "404" ] || { echo "::error::verify failed (/m/test=$t /m/zzz-nope=$z)"; exit 1; }
+
+      - name: Summary
+        run: |
+          {
+            echo "### Migrate prod (one-off)"
+            echo ""
+            echo "- \`schema.sql\` applied to live DB via /api/migrate ✓"
+            echo "- \`/m/test\` present (test member seeded) ✓"
+            echo "- new: bump_request_events, context CHECKs, scan_events(scan_id) unique"
+          } >> "$GITHUB_STEP_SUMMARY"
