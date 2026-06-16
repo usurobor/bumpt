@@ -1,11 +1,9 @@
 name: Vercel domain (one-off)
 
-# Diagnose why bumpt.io won't resolve. Evidence so far: registry delegates
-# bumpt.io -> ns1/ns2.vercel-dns.com, but those NS answer REFUSED and Vercel
-# reports zone:false / "not a DNS zone". Per Vercel docs that means the zone
-# was never provisioned on Vercel's side -- typically a pending TXT (_vercel)
-# verification because the project lives on a team. This run reads exactly what
-# Vercel is asking for (verification records + verified state) so we stop guessing.
+# Verify bumpt.io now resolves via Squarespace-hosted DNS:
+#   apex A -> 216.198.79.1, www CNAME -> cname.vercel-dns.com
+# Checks registry delegation (should be back to Squarespace NS), the A/CNAME
+# answers, Vercel's config/misconfigured flag, and HTTPS reachability.
 # workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
 
 on:
@@ -24,30 +22,24 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
-      - name: Inspect verification + zone state (Vercel REST API)
+      - name: Verify resolution + Vercel config
         run: |
-          [ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN not set"; exit 1; }
-          auth=(-H "Authorization: Bearer $VERCEL_TOKEN")
-          TID=$(curl -sS "${auth[@]}" https://api.vercel.com/v2/teams | jq -r '.teams[]? | select(.slug=="usurobor-1186s-projects") | .id')
-          q=""; [ -n "$TID" ] && [ "$TID" != "null" ] && q="?teamId=$TID"
-          echo "teamId: ${TID:-<none>}"
-          api() { curl -sS "${auth[@]}" "$@"; }
-
-          echo "== account/team domain object (zone? verified? intent?) =="
-          api "https://api.vercel.com/v5/domains/bumpt.io$q" | jq '.domain | {name, verified, zone:.zone?, serviceType, nameservers, intendedNameservers, creator:.creator?.username}' 2>/dev/null \
-            || api "https://api.vercel.com/v5/domains/bumpt.io$q"
-
-          echo "== project domain object (verification records Vercel wants) =="
-          api "https://api.vercel.com/v9/projects/bumpt/domains/bumpt.io$q" | jq '{name, verified, verification}' 2>/dev/null \
-            || api "https://api.vercel.com/v9/projects/bumpt/domains/bumpt.io$q"
-
-          echo "== config endpoint (misconfigured? which records expected) =="
-          api "https://api.vercel.com/v6/domains/bumpt.io/config$q" | jq '.' 2>/dev/null \
-            || api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
-
-          echo "== registry delegation (where the world is sent) =="
+          echo "== registry delegation (should now be Squarespace NS, not vercel-dns) =="
           dig NS bumpt.io @a0.nic.io +noall +authority +additional || true
-          echo "== does Vercel NS answer SOA yet? (REFUSED = no zone) =="
-          dig SOA bumpt.io @ns1.vercel-dns.com +noall +comments +answer || true
-          echo "== resolver view =="
-          dig bumpt.io @8.8.8.8 +noall +comments +answer || true
+          echo "== apex A (want 216.198.79.1) via Google =="
+          dig A bumpt.io @8.8.8.8 +noall +comments +answer || true
+          echo "== www CNAME (want cname.vercel-dns.com) via Google =="
+          dig CNAME www.bumpt.io @8.8.8.8 +noall +comments +answer || true
+          echo "== A via Cloudflare 1.1.1.1 (cross-check) =="
+          dig A bumpt.io @1.1.1.1 +short || true
+          if [ -n "$VERCEL_TOKEN" ]; then
+            auth=(-H "Authorization: Bearer $VERCEL_TOKEN")
+            TID=$(curl -sS "${auth[@]}" https://api.vercel.com/v2/teams | jq -r '.teams[]? | select(.slug=="usurobor-1186s-projects") | .id')
+            q=""; [ -n "$TID" ] && [ "$TID" != "null" ] && q="?teamId=$TID"
+            echo "== Vercel config (misconfigured should flip to false once A resolves) =="
+            curl -sS "${auth[@]}" "https://api.vercel.com/v6/domains/bumpt.io/config$q" | jq '{misconfigured, aValues, cnames, nameservers}' || true
+          fi
+          echo "== HTTPS apex =="
+          curl -sS -m 20 -o /dev/null -w 'https://bumpt.io -> HTTP %{http_code}\n' https://bumpt.io || echo "apex not reachable yet"
+          echo "== HTTPS www =="
+          curl -sS -m 20 -o /dev/null -w 'https://www.bumpt.io -> HTTP %{http_code}\n' https://www.bumpt.io || echo "www not reachable yet"
