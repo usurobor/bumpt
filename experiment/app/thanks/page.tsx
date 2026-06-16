@@ -2,9 +2,13 @@ import { sql } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-// After-tap state. Global aggregate count only (momentum/mystery), never per-member.
+// After-tap state. Global unique-people count only (momentum/mystery), never
+// per-member: distinct devices that have asked to bump, excluding test members.
 export default async function Thanks() {
-  const rows = await sql`select count(*)::int as n from want_ins`;
+  const rows = await sql`
+    select count(distinct device_id)::int as n
+    from bump_request_events
+    where member_id <> 'test'`;
   const count = rows[0]?.n ?? 0;
   return (
     <main style={{ textAlign: 'center', paddingTop: 48 }}>
