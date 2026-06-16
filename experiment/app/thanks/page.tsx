@@ -9,10 +9,10 @@ export default async function Thanks() {
   return (
     <main style={{ textAlign: 'center', paddingTop: 48 }}>
       <p style={{ fontSize: 44, fontWeight: 700, margin: 0 }}>{count}</p>
-      <p style={{ color: '#666', marginTop: 4 }}>people want in.</p>
+      <p style={{ color: '#666', marginTop: 4 }}>have asked to bump in.</p>
 
       <p style={{ marginTop: 44 }}>Come back in a month.</p>
-      <p style={{ color: '#666' }}>You still only get in through an in-person bump.</p>
+      <p style={{ color: '#666' }}>You still only get in when a member bumps you in, in person.</p>
 
       <p style={{ marginTop: 48, fontSize: 12 }}>
         <a href="/privacy" style={{ color: '#999' }}>privacy</a>
