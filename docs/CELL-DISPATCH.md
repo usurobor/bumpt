@@ -1,76 +1,83 @@
-# Cell dispatch — the tag-gated board
+# Cell dispatch — the agile board
 
 How a contract-issue becomes shipped work. Refines the role boundary
 (`.cn-sigma/logs/20260616.md`) and §5.2 cell-dispatch (wake=δ=γ, α+β as Agent
 sub-agents, receipt at `.cdd/unreleased/{N}/`).
 
+> Status: **draft, under discussion** — naming settled on `status:` / agile
+> columns; open questions in the last section. No labels created and `claude-wake.yml`
+> untouched until the design converges and home hands down the cell-launch entrypoint.
+
 ## Principle
 
 **Wake never implements an issue just because it exists.** An issue is a
-discussion surface until a human explicitly *arms* it with a label. The label is
-the dispatch act — the seam between *authoring* (Σ + human, on `main`) and
-*shipping* (the cell, on `dev`).
+discussion surface until a human explicitly *commits* it to work by moving it to
+**To Do**. That move is the dispatch act — the seam between *authoring* (Σ +
+human, on `main`) and *shipping* (the cell, on `dev`).
 
-- **Σ authors** the contract-issue and discusses it with the human.
-- **The human arms** it (`cell:dispatch`) — directly, or by telling Σ to apply it.
-- **The cell ships** it and moves it across the board, closing with a Receipt.
-- **δ (human, or Σ on next wake) accepts** the Receipt and closes, or sends it back.
+It's a kanban board where the card is a GitHub issue, the column is a `status:`
+label, and the human is the PO who decides what enters **To Do**:
 
-This is a kanban board where the card is a GitHub issue and the column is a label.
+- **Σ authors** the contract-issue (Backlog) and refines it with the human (Ready).
+- **The human commits** it to **To Do** — directly, or by telling Σ to label it.
+- **The cell ships** it: To Do → In Progress → Review, closing with a Receipt.
+- **δ (human, or Σ on next wake) accepts** the Receipt and closes (Done), or sends
+  it back.
 
 ## Labels (the board)
 
 | Label | Column | Applied by | Wake behavior |
 |-------|--------|-----------|----------------|
-| `cell:draft` | Backlog / Discussion | Σ (on open) | **ignore** — under discussion |
-| `cell:ready` | Ready | Σ, on convergence | **ignore** — converged, not yet armed |
-| `cell:dispatch` | Dispatched (To Do) | **human** (or Σ on human direction) | **arm** — wake claims it |
-| `cell:in-progress` | In Progress | cell (on claim) | working — do not re-pick |
-| `cell:review` | Review | cell (on finish, + Receipt) | awaiting δ acceptance |
-| `cell:blocked` | Blocked | cell | needs human/Σ input → back to discussion |
+| `status:backlog` | Backlog | Σ (on open) | **ignore** — under discussion |
+| `status:ready` | Ready | Σ, on convergence | **ignore** — refined, not committed |
+| `status:todo` | To Do | **human** (or Σ on human direction) | **claim** — the dispatch gate |
+| `status:in-progress` | In Progress | cell (on claim) | working — do not re-pick |
+| `status:review` | Review | cell (on finish, + Receipt) | awaiting δ acceptance |
+| `status:blocked` | Blocked | cell | needs human/Σ input → back to discussion |
 
-Done = issue **closed** by δ after the Receipt is accepted. (Optional flags:
-`cell:accepted` on a closed-good issue, `cell:changes` when δ sends it back.)
+**Done** = the issue is **closed** by δ once the Receipt is accepted (no separate
+label; open/closed is the Done axis). Sending work back = `status:review →
+status:todo` with a comment.
 
-Only `cell:dispatch` arms the cell. Every other label is inert to wake — so an
-issue can be authored, debated, and revised under `cell:draft`/`cell:ready` with
+Only `status:todo` arms the cell. Every other label is inert to wake — so an issue
+can be authored, debated, and revised under `status:backlog`/`status:ready` with
 zero risk of auto-execution.
 
 ## Lifecycle
 
 ```
 Σ opens issue
-        │  cell:draft
+        │  status:backlog
         ▼
-  discuss (Σ ↔ human)  ──► converge ──►  cell:ready
+  refine (Σ ↔ human)  ──► converge ──►  status:ready
         │                                   │
-        │            human arms ────────────┤  cell:dispatch
+        │          human commits ───────────┤  status:todo   (the dispatch gate)
         ▼                                    ▼
   (wake ship intent claims it)
-        │  −cell:dispatch  +cell:in-progress
+        │  −status:todo  +status:in-progress
         ▼
   cell runs §5.2: γ=δ launches α+β; builds on dev; Receipt → .cdd/unreleased/{N}/
         │
-        ├── done ──►  −cell:in-progress  +cell:review   (+ PR, + Receipt comment)
+        ├── done ──►  −status:in-progress  +status:review   (+ PR, + Receipt comment)
         │                    │
-        │            δ accepts ──► close issue (cell:accepted), merge/promote
-        │            δ rejects ──► −cell:review +cell:dispatch (or cell:changes), comment
+        │            δ accepts ──► close issue (Done), merge/promote
+        │            δ rejects ──► −status:review +status:todo, comment
         │
-        └── boundary hit ──► +cell:blocked, comment what's needed → back to discussion
+        └── boundary hit ──► +status:blocked, comment what's needed → back to discussion
 ```
 
 ## Wake's dispatch rule
 
-Wake's **ship intent** (distinct from the heartbeat/author intents) acts on:
+Wake's **ship intent** (distinct from the heartbeat/attach intent) acts on:
 
-> open issues labeled `cell:dispatch` **and not** `cell:in-progress`.
+> open issues labeled `status:todo` **and not** `status:in-progress`.
 
-On claim it atomically swaps `cell:dispatch → cell:in-progress` (so a second wake
+On claim it atomically swaps `status:todo → status:in-progress` (so a second wake
 won't double-claim — reinforced by the existing `concurrency: claude-wake`
 serialization). Triggers:
 
-- `issues: [labeled]` — react immediately when `cell:dispatch` is applied.
-- the scheduled sweep (`:05/:20/:35/:50`) — re-scan for any armed-but-unclaimed
+- `issues: [labeled]` — react immediately when `status:todo` is applied.
+- the scheduled sweep (`:05/:20/:35/:50`) — re-scan for any committed-but-unclaimed
   issue, in case a `labeled` event was missed.
 
 This replaces the current title-based trigger (`title contains "claude-wake"`) for
@@ -79,19 +86,26 @@ unchanged.
 
 ## Boundary check
 
-- A human, not wake, decides *when* work starts (applies `cell:dispatch`).
-- Σ never sets `cell:in-progress`/`cell:review` (those are the cell's), and never
-  ships; Σ may set `cell:draft`/`cell:ready` and, **on human direction**,
-  `cell:dispatch`.
-- δ (human, or Σ on next wake) is the only one who closes a `cell:review` issue —
+- A human, not wake, decides *when* work starts (moves the card to To Do).
+- Σ never sets `status:in-progress`/`status:review` (those are the cell's), and
+  never ships; Σ may set `status:backlog`/`status:ready` and, **on human
+  direction**, `status:todo`.
+- δ (human, or Σ on next wake) is the only one who closes a `status:review` issue —
   the Receipt crosses the boundary there.
 
-## Status — not yet wired
+## Open questions (for discussion)
 
-This spec defines the protocol. Two implementation steps remain, and they ride on
-the still-open §5.2 cell-launch entrypoint (the cell-prompt template + foreign-body
-dispatch mechanism requested from home):
-
-1. Create the six `cell:*` labels in the repo.
-2. Teach `claude-wake.yml` the ship intent (label trigger + the dispatch rule
-   above) and the cell-prompt that runs γ→α→β→Receipt over the armed issue.
+1. **Is To Do the right gate?** It's agile-native (human commits the card → the
+   cell, as "the dev", picks it up). Alternative: keep a distinct `status:dispatch`
+   so "committed to work" and "go now" are separate. I lean To Do — fewer states.
+2. **Backlog vs Ready — keep both, or collapse?** Backlog = unrefined,
+   Ready = refined-but-not-committed. They earn their keep only if we want a
+   visible "this is agreed, just not scheduled" column. Otherwise drop Backlog
+   (un-labeled = backlog).
+3. **Done as close vs `status:done` label.** Proposed: closing the issue *is* Done.
+   A label would only add board-column visibility on closed issues. Worth it?
+4. **Rejection path.** `review → todo` (re-arm, simplest) vs a dedicated
+   `status:changes` so a kickback reads differently from a fresh commit.
+5. **Blocked's return.** When the cell sets `status:blocked`, does it drop
+   `in-progress` (card leaves the doing column) or keep it (still owned, just
+   stalled)? I lean: drop in-progress, so Blocked is a clean "back to you" state.
