@@ -7,6 +7,10 @@ sub-agents, receipt at `.cdd/unreleased/{N}/`).
 > Status: **draft, under discussion** — naming settled on `status:` / agile
 > columns; open questions in the last section. No labels created and `claude-wake.yml`
 > untouched until the design converges and home hands down the cell-launch entrypoint.
+>
+> **Role:** this is the **internal operating guide** — canonical for how we run the board.
+> The same model is under external review as [RFC-cell-dispatch](./RFC-cell-dispatch.md);
+> decisions from that review flow back into this doc.
 
 ## Principle
 

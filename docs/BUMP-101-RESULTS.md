@@ -9,17 +9,18 @@ This document records what happened. It exists so the experiment stays evidence,
 ## Pre-registration
 
 - Pre-registration commit / tag: _TBD (the BUMP-101.md commit where the §7 bars were frozen)_
+- Deploy tag live during the run (0.0.1 / `vN.N.N`): _TBD_
 - Final bars (copied from the frozen §7): _TBD_
 
 ## Setup as run
 
 - Event dates: _TBD_
-- Founders: _TBD_
-- Per-founder URLs: _TBD_
+- Members (the three founders): _TBD_
+- Per-member URLs: _TBD_
 
 ## Aggregate results
 
-| Metric | Founder A | Founder B | Founder C | Total |
+| Metric | Member A | Member B | Member C | Total |
 |---|---:|---:|---:|---:|
 | `scan_count` (unprompted) | | | | |
 | `about_open_count` | | | | |
@@ -28,7 +29,7 @@ This document records what happened. It exists so the experiment stays evidence,
 | `about_to_request_rate` | | | | |
 | `scan_to_request_rate` | | | | |
 
-Scan-context breakdown (unprompted / after conversation / founder-directed / test / unknown): _TBD_
+Scan-context breakdown (unprompted / after_conversation / member_directed / test / unknown): _TBD_
 
 ## Decision
 

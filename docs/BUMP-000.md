@@ -86,7 +86,7 @@ These are constitutional. Changing one changes the product.
 
 ### 5.1 Physical admission
 
-The only path to membership is an in-person phone-to-phone bump with an existing member.
+The only path to membership is an in-person bump accepted by an existing member — you ask, and a member accepts, in person. The v1 ceremony is specified in [BUMP-050](./BUMP-050.md).
 
 - No invite links.
 - No remote signup.
@@ -281,6 +281,8 @@ Signals must be easy to revoke.
 A prospective member and sponsor meet in person.
 
 The sponsor opens admission mode. The prospective member opens join mode. The phones exchange a short-range challenge through NFC, BLE, local network, ultrasonic, QR challenge, or another proximity method. The ceremony produces an admission receipt.
+
+The v1 realization of this ceremony — *ask to bump → accept in person → receipt* — is specified in [BUMP-050](./BUMP-050.md).
 
 Minimum admission receipt:
 
@@ -679,6 +681,11 @@ Decision criterion:
 - works on common phones
 - produces inspectable receipt
 - does not require invasive permissions
+
+> Proposed resolution: [BUMP-050](./BUMP-050.md) specifies a **rotating-QR request/accept**
+> ceremony as the v1 transport, with `proximity_claim: "sponsor_attested"` (an accountable
+> member accepts in person). NFC/BLE/UWB remain available as later hardening. Constitutional
+> ratification of this resolution is pending.
 
 ### 17.2 Public sponsor lineage
 
