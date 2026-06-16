@@ -2,15 +2,15 @@
 
 > An in-person social admission protocol with a worn, consentful social surface.
 
-**Status:** Draft v0.4 · pre-MVP (this repo holds the protocol's documents; the product is not built yet)
+**Status:** 0.0.1 · live field experiment ([bumpt.io](https://bumpt.io)) · pre-MVP
 
 Bump lets people you meet in the room discover your current, opt-in social signal through a
 worn tag. You wear a small tag — a QR/NFC sticker, pin, or patch. Anyone can scan it, but
 they see **only what you've chosen to show them, right now**. The default is private.
 
 The one move that defines Bump: **membership can only begin through an in-person sponsor
-bump** — a phone-to-phone handshake with someone who's already a member. No signup page, no
-invite link, no email code. If you weren't there in person, you're not in.
+bump** — you ask a member to bump you in, and an existing member accepts, in person. No signup
+page, no invite link, no email code. If you weren't there in person, you're not in.
 
 > Move the social object from the feed to the worn tag.
 
@@ -40,8 +40,9 @@ social, physical, and sponsor cost of joining — it doesn't claim to make abuse
 Everything composes from four surfaces:
 
 - **Tag** — the worn physical interface (QR + NFC) that points to your node.
-- **Bump** — the in-person admission ceremony: a proximity-gated handshake that admits a new
-  member or binds a tag, witnessed by a sponsor.
+- **Bump** — the in-person admission ceremony ([BUMP-050](./docs/BUMP-050.md)): ask to bump →
+  an existing member accepts in person → a signed receipt admits the new member. Asking is only
+  a knock; acceptance is membership.
 - **Signal** — your current, consentful emission: *"open to talk shop," "here to dance, not
   network," "do not approach."* Scoped to who may see it, time-bounded, revocable.
 - **Receipt** — the signed, inspectable evidence layer for membership, conduct, standing, and
@@ -65,7 +66,9 @@ These are constitutional — change one and it's a different product:
 
 ## Documents
 
-The canonical document stack lives under [`docs/`](./docs/):
+The canonical document stack lives under [`docs/`](./docs/).
+
+**Product / protocol**
 
 | Doc | What it is | Status |
 |-----|------------|--------|
@@ -74,25 +77,40 @@ The canonical document stack lives under [`docs/`](./docs/):
 | BUMP-010 | Protocol Spec — Node, Tag, Signal, Receipt, Standing schemas | planned |
 | BUMP-020 | Threat Model — relay, coercion, tag theft, stalking, recovery | planned (pre-launch) |
 | BUMP-030 | Governance Constitution — cells, forks, maintainers, rule changes | planned |
+| [BUMP-040](./docs/BUMP-040.md) | Revenue Constitution — how artifacts fund the commons without selling admission | **Draft v0.1** |
+| [BUMP-050](./docs/BUMP-050.md) | Admission Protocol — ask to bump, accept in person, issue receipt | **Draft v0.1** |
 | [BUMP-100](./docs/BUMP-100.md) | MVP PRD — the first buildable product slice | **Draft v0.1** |
-| [BUMP-101](./docs/BUMP-101.md) | Stone Techno field experiment — worn-QR pre-MVP test | **Draft v0.1.1** |
+| [BUMP-101](./docs/BUMP-101.md) | Stone Techno field experiment — worn-QR pre-MVP test | **Draft v0.1.3** |
 | [BUMP-101-RESULTS](./docs/BUMP-101-RESULTS.md) | Field experiment outcome (pre-registered, filled post-event) | awaiting event |
 
-Start with **[BUMP-000](./docs/BUMP-000.md)** — it's the source of truth for intent.
+**Operations / agent**
+
+| Doc | What it is |
+|-----|------------|
+| [DEVELOPMENT](./docs/DEVELOPMENT.md) | Branch model, CI gate, dev → deploy → Vercel flow |
+| [CELL-DISPATCH](./docs/CELL-DISPATCH.md) | Tag-gated cell dispatch board (internal operating guide) |
+| [RFC-cell-dispatch](./docs/RFC-cell-dispatch.md) | External-review RFC for the dispatch model |
+| [CI-TELEGRAM](./docs/CI-TELEGRAM.md) | CI/CD Telegram notification setup |
+
+Start with **[BUMP-000](./docs/BUMP-000.md)** (source of truth for intent) and
+**[BUMP-050](./docs/BUMP-050.md)** (how admission works in v1).
 
 ## Status
 
-Bump is early. The repo holds the **inception RFC** (BUMP-000), the **MVP PRD** (BUMP-100),
-and a pre-MVP **field experiment** (BUMP-101). A throwaway experiment app lives under
-[`experiment/`](./experiment/) — it is written but **not yet deployed or validated** (it
-needs a Supabase project, env, Vercel deploy, and real-phone QA). No production client,
-server, or tag exists. The v0.1 MVP is scoped (BUMP-000 §13, BUMP-100) but not started. The
-intended first proof: in **one city, within six months**, 100–300 members who all joined by
-verified in-person bump, wearing tags and publishing signals at real events.
+**0.0.1 — live field experiment, pre-MVP.** Bump 0.0.1 is live at [bumpt.io](https://bumpt.io)
+as the [BUMP-101](./docs/BUMP-101.md) field experiment: scan a member card, read the rule, tap
+**Ask to bump**. A tap is a *knock*, not membership — it records an anonymous, aggregate signal
+of demand and nothing more. The throwaway app lives under [`experiment/`](./experiment/) and
+ships through the gated `dev → deploy → Vercel` pipeline (see [DEVELOPMENT](./docs/DEVELOPMENT.md)).
 
-This is deliberately **not** venture-scale. Bump's value is inversely proportional to its
-growth rate — one city, slow, dense, real. It's built to be run as a co-op, art project, or
-protocol foundation, funded by dues, grants, or patrons; never by ads or selling standing.
+The **MVP is not built.** The accept-in-person ceremony ([BUMP-050](./docs/BUMP-050.md)),
+receipts, tag binding, live signals, recovery, and standing all remain future work (scoped in
+BUMP-000 §13 and BUMP-100). The intended first proof: in **one city, within six months**,
+100–300 members who all joined by verified in-person bump, wearing tags and publishing signals
+at real events.
+
+This is deliberately **not** venture-scale — one city, slow, dense, real; funded without ads
+and without selling standing (see [BUMP-040](./docs/BUMP-040.md)).
 
 ## Contributing
 
@@ -126,6 +144,5 @@ the load tier your environment supports; don't improvise the order.
 
 The protocol, schemas, and governance history are intended as a **forkable commons** — public,
 inspectable, and survivable beyond any single operator. Private member data is not part of the
-commons and is not forked by default. The formal license and the project's legal shell
-(co-op / foundation / LLC) are open questions, tracked in BUMP-000; until they're settled,
-treat this as a public draft for reading and discussion.
+commons and is not forked by default. The formal license is an open question, tracked in
+BUMP-000; until it's settled, treat this as a public draft for reading and discussion.

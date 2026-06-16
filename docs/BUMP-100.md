@@ -91,11 +91,15 @@ or location.
 
 ## 5. Core flows (MVP)
 
-1. **Bump (in person).** Phone-to-phone proximity handshake. If one party is a newcomer →
-   **admission**: creates membership, records sponsor, emits a signed AdmissionReceipt. If both
-   are members → **connection**: records one bump edge ("we bumped"). Proximity method (NFC
-   trigger → BLE/UWB confirm) is an open implementation choice (BUMP-000 §17.1) — but **never
-   QR**: QR is screenshottable, so it is the *scan/discovery* surface only, never admission.
+1. **Bump (in person).** The admission ceremony of [BUMP-050](./BUMP-050.md): *ask to bump →
+   accept in person → receipt*. If one party is a newcomer → **admission**: creates membership,
+   records sponsor, emits a signed AdmissionReceipt. If both are members → **connection**:
+   records one bump edge ("we bumped").
+   The **static tag QR is scan/discovery only — it does not admit anyone.** Admission requires
+   the BUMP-050 ceremony: a short-lived, scan-originated `AdmissionRequest` accepted in person
+   by an existing member, followed by an `AdmissionReceipt`. The v1 transport is a
+   short-lived request QR/code/phrase accepted in person; NFC/BLE/UWB may harden proximity
+   later (BUMP-000 §17.1) but are **not** the product primitive — physical sponsor admission is.
 2. **Bind a tag.** Bind a physical tag (QR/NFC) to a node; emit a TagReceipt. Tags are
    replaceable and revocable; a stolen tag grants **no** account control.
 3. **Set / expire a signal.** Set the live signal; it shows on scan; it expires to static
@@ -125,7 +129,9 @@ receipts can later export to git-as-substrate (post-MVP). Policy stays stable; i
 is volatile (BUMP-000 §15).
 
 - **Supabase** — Postgres, Auth, Realtime, Edge Functions, Storage.
-- **Expo** (React Native, iOS + Android) — `expo-nfc`, `react-native-ble-plx` for the bump.
+- **Expo** (React Native, iOS + Android) — the member app. NFC/BLE (`expo-nfc`,
+  `react-native-ble-plx`) are *optional* proximity hardening, **not** the v1 admission transport
+  (which is BUMP-050's short-lived request QR/code accepted in person).
 - **Vercel** (Next.js, SSR) — the public Node Page rendered on anonymous QR scan.
 - **Spotify Web API** — the Radio signal (current track).
 
@@ -171,5 +177,5 @@ membership becomes a status flex; scanners see too much by default.
 - **Signal expiry default** — end-of-day vs event-bounded vs fixed N hours. (Default state = static is decided.)
 - **Number** — **decided: opaque/non-sequential.** No sequential vanity numbers (ICQ-style numbers became tradeable status — collides with non-transferable standing, §5.4).
 - **Sponsor visibility** — MVP cut: non-members see "vouched ✓", members see the name (BUMP-000 §17.2 remains open beyond MVP).
-- **Proximity method for the bump** — NFC-trigger → BLE/UWB confirm; exact handshake open (§17.1), iOS phone-to-phone NFC restrictions noted.
+- **Proximity method for the bump** — v1 is BUMP-050's short-lived request QR/code accepted in person (sponsor-attested); NFC/BLE/UWB are later hardening, not required for v1 (§17.1; iOS phone-to-phone NFC restrictions noted).
 - **Genesis** — who admits the first member (BUMP-000 open question).

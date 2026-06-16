@@ -3,6 +3,7 @@
 **Status:** Draft — seeking external review
 **Audience:** A reviewer with no prior knowledge of our system
 **Date:** 2026-06-16
+**Role:** external-review snapshot. The internal operating guide is [CELL-DISPATCH](./CELL-DISPATCH.md).
 
 ---
 
