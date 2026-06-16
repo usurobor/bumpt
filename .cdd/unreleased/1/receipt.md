@@ -60,8 +60,19 @@
 
 ## CI
 
-- Run: <RUN_URL> (id <RUN_ID>) — <RESULT>
+- **Green run:** https://github.com/usurobor/bumpt/actions/runs/27650083746 (id 27650083746, sha `6ba7dea`)
+  - build-test: success (typecheck, build, smoke, db-verify all green)
+  - deploy: success · live-smoke: success · notify-pre/post: success
 - Local: `cd experiment && npm ci && npm run -s typecheck && npm run -s build` all pass.
+
+### Commits on `dev`
+- `7936c0e` — experiment: harden BUMP-101 instrumentation for prereg (issue #5)
+- `6ba7dea` — ci(live-smoke): tolerate pre-migration live DB (test member best-effort)
+
+The first run (27649812383) was green on the gate + deploy but the new live-smoke
+job failed because the live DB had no `test` member yet (the post-deploy migration
+below is still pending). `6ba7dea` made that probe best-effort so the gate reflects
+schema-independent guarantees; run 27650083746 is fully green.
 
 ## Remaining: apply schema/constraints to the LIVE DB (post-deploy runner action)
 
