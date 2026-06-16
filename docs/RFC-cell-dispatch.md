@@ -201,3 +201,7 @@ is missed.
 If the model holds up, we will: create the `status:*` labels, change the wake
 trigger from its current ad-hoc form to the `status:todo` rule above, and document
 the board as the standard way work flows from specification to shipped code.
+
+## Review surface
+
+External review is tracked at: https://github.com/usurobor/bumpt/issues/4
