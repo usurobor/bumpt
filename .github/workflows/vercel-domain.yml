@@ -3,7 +3,7 @@ name: Vercel domain (one-off)
 # Attaches bumpt.io (+ www) to the Vercel project and reports verification/SSL.
 # Nameservers already point to Vercel, so attaching is all that's left.
 # workflow_dispatch + self-trigger on this file (sandbox can't dispatch via API).
-# fix: create the Vercel-DNS zone (team domain) so the NS stop REFUSED
+# fix: add records on Vercel-hosted zone (apex A + www CNAME)
 
 on:
   workflow_dispatch:
@@ -45,6 +45,11 @@ jobs:
           done
           echo "== ensure Vercel-DNS zone (team-level domain, so the NS actually serve it) =="
           api -X POST "https://api.vercel.com/v5/domains$q" -H "Content-Type: application/json" -d '{"name":"bumpt.io"}'
+          echo "== add DNS records on Vercel's zone (apex A + www CNAME) =="
+          api -X POST "https://api.vercel.com/v2/domains/bumpt.io/records$q" -H "Content-Type: application/json" -d '{"type":"A","name":"","value":"76.76.21.21","ttl":60}'
+          api -X POST "https://api.vercel.com/v2/domains/bumpt.io/records$q" -H "Content-Type: application/json" -d '{"type":"CNAME","name":"www","value":"cname.vercel-dns.com","ttl":60}'
+          echo "== records now =="
+          api "https://api.vercel.com/v4/domains/bumpt.io/records$q"
           echo "== config (bumpt.io) =="
           api "https://api.vercel.com/v6/domains/bumpt.io/config$q"
           echo "== project domain (bumpt.io) =="
