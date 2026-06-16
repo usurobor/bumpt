@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 
 // Records a "knock" — the requester tapping "Ask to bump". In protocol terms this
 // is an AdmissionRequest (status: pending); it is NEVER membership. You're in only
-// when a member accepts you in person (docs/PROTOCOL.md). This experiment measures
+// when a member accepts you in person (BUMP-050 on main). This experiment measures
 // knocks only; the accept/receipt ceremony is built separately (the CDD cell).
 // No personal data: an anonymous first-party id dedupes repeat taps.
 export async function POST(req: NextRequest) {
