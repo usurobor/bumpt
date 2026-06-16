@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 // Reached only from a scanned card's "Ask to bump" (carries m + s). Records the
 // About open, then offers the knock — "ask to bump". This is the only place it lives.
 // A knock is an AdmissionRequest, never membership: you're in only when a member
-// accepts you in person (see docs/PROTOCOL.md).
+// accepts you in person (see BUMP-050 on main).
 export default async function About({ searchParams }: { searchParams: { m?: string; s?: string } }) {
   const m = searchParams.m ?? null;
   const s = searchParams.s ?? null;
