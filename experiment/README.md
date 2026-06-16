@@ -7,9 +7,10 @@ It is **not deployed yet** — it needs a database, env, and real-phone QA befor
 ## What it does
 
 A scan of a worn QR opens a teaser card; "What is this?" leads to an About page that explains
-Bump is in-person only and offers a **one-tap "I want in"** — no email, no signup, no PII
-(BUMP-000 §5.1). After the tap: "come back in a month" + a live count of how many want in. It
-measures, per member, anonymously: scans (by exposure context), About-opens, and want-ins.
+Bump is in-person only and offers a **one-tap "Ask to bump"** — no email, no signup, no contact
+data (BUMP-000 §5.1). The ask is enabled only when the page is reached from a real scan. After
+the tap: "come back in a month" + a live count of how many distinct people have asked to bump.
+It measures, per member, anonymously: scans (by exposure context), About-opens, and bump requests.
 
 The tag-wearer is a `member` (a node). In this experiment the members are the three founders.
 
@@ -25,18 +26,18 @@ The tag-wearer is a `member` (a node). In this experiment the members are the th
 | Route | Purpose |
 |---|---|
 | `GET /m/:member` | the worn-tag target — renders the card, records a scan tagged with the member's active exposure context, threads `scan_id` into About |
-| `GET /about?m=:member&s=:scan_id` | the explainer + one-tap "I want in" |
-| `POST /api/want-in` | records a want-in, deduped by an anonymous first-party cookie id (no PII) |
-| `GET /thanks` | "come back in a month" + live want-in count |
+| `GET /about?m=:member&s=:scan_id` | the explainer + one-tap "Ask to bump" (enabled only for a real scan; disabled when opened directly) |
+| `POST /api/bump-request` | records a bump request — rejected unless `s` matches a real scan whose member is `m`; deduped per `(device, member)` by an anonymous first-party id (no contact data) |
+| `GET /thanks` | "come back in a month" + live distinct-people bump-request count |
 | `GET /ops/:member?token=` | per-member ops: open/close exposure windows, live counts |
 | `POST /api/ops/window` | start/stop an exposure window |
 | `GET /ops/export?token=` | per-member-context CSV export |
 
 ## Tables
 
-`members`, `exposure_sessions`, `scan_events`, `about_events`, `want_ins` (see
+`members`, `exposure_sessions`, `scan_events`, `about_events`, `bump_request_events` (see
 [`schema.sql`](./schema.sql)). No email, IP, user agent, ad pixels, or behavioral analytics —
-the only thing stored per person is an anonymous random `device_id` used to dedupe taps.
+the only thing stored per person is an anonymous random `device_id` used to dedupe taps per member.
 
 ## Setup
 
@@ -57,9 +58,11 @@ After wiring, verify on the live URL:
 - [ ] `/m/a` records a scan_event
 - [ ] `/m/a` → About carries `m` and `s`
 - [ ] opening About records an about_event
-- [ ] tapping "I want in" records a want_in and lands on `/thanks`
-- [ ] `/thanks` shows "come back in a month" + the want-in count
-- [ ] tapping again from the same device does not create a second want_in (anonymous dedupe)
+- [ ] tapping "Ask to bump" (from a real scan) records a bump_request_event and lands on `/thanks`
+- [ ] `/thanks` shows "come back in a month" + the distinct-people bump-request count
+- [ ] tapping again from the same device to the same member does not create a second row (per-member dedupe)
+- [ ] tapping from the same device to a different member does count for that member
+- [ ] opening `/about` directly disables the ask; a forged POST records nothing
 - [ ] opening an ops window changes the context of subsequent scans
 - [ ] "Stop window" returns new scans to `unknown`
 - [ ] `/ops/export` CSV computes the §7 bars directly (per-member-context, with rates)

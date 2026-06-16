@@ -34,7 +34,7 @@ export default async function Ops({
   for (const s of scans) scanByCtx[s.context] = (scanByCtx[s.context] ?? 0) + 1;
 
   const aboutOpens = (await sql`select count(*)::int as n from about_events where member_id = ${memberId}`)[0]?.n ?? 0;
-  const wantIns = (await sql`select count(*)::int as n from want_ins where member_id = ${memberId}`)[0]?.n ?? 0;
+  const bumpRequests = (await sql`select count(*)::int as n from bump_request_events where member_id = ${memberId}`)[0]?.n ?? 0;
 
   const Win = ({ c, label }: { c: string; label: string }) => (
     <form action="/api/ops/window" method="post" style={{ display: 'inline-block', marginRight: 8, marginBottom: 8 }}>
@@ -64,7 +64,7 @@ export default async function Ops({
       <h2>counts</h2>
       <ul>
         <li>About opens: {aboutOpens}</li>
-        <li>Want-ins: {wantIns}</li>
+        <li>Bump requests: {bumpRequests}</li>
       </ul>
       <h3>by context</h3>
       <table cellPadding={6} style={{ borderCollapse: 'collapse' }}>

@@ -83,13 +83,21 @@ jobs:
           PGPASSWORD: postgres
         run: |
           q() { psql -h localhost -U postgres -d main -tAc "$1" | tr -d '[:space:]'; }
-          want_ins=$(q "select count(*) from want_ins")
+          rows=$(q "select count(*) from bump_request_events")
+          people=$(q "select count(distinct device_id) from bump_request_events")
+          mem_a=$(q "select count(*) from bump_request_events where member_id = 'a'")
+          mem_b=$(q "select count(*) from bump_request_events where member_id = 'b'")
           scans=$(q "select count(*) from scan_events")
-          echo "want_ins=$want_ins scan_events=$scans"
-          # Two taps from one device -> exactly one want_in (created + deduped).
-          test "$want_ins" = "1" || { echo "::error::expected 1 want_in, got $want_ins"; exit 1; }
-          # The /m/a scan was recorded; the unknown member did not create one.
-          test "$scans" -ge "1" || { echo "::error::expected >=1 scan_event, got $scans"; exit 1; }
+          echo "rows=$rows people=$people mem_a=$mem_a mem_b=$mem_b scan_events=$scans"
+          # One device asked member a twice (dedupe -> 1 row) and member b once (1 row).
+          test "$rows" = "2" || { echo "::error::expected 2 bump_request_events, got $rows"; exit 1; }
+          # Global unique people stays distinct-device-based: one device.
+          test "$people" = "1" || { echo "::error::expected 1 distinct device, got $people"; exit 1; }
+          # Per-member: same device + same member deduped; same device + different member counted.
+          test "$mem_a" = "1" || { echo "::error::expected 1 row for member a, got $mem_a"; exit 1; }
+          test "$mem_b" = "1" || { echo "::error::expected 1 row for member b, got $mem_b"; exit 1; }
+          # The /m/a and /m/b scans were recorded; forged/empty POSTs recorded nothing.
+          test "$scans" -ge "2" || { echo "::error::expected >=2 scan_events, got $scans"; exit 1; }
 
       - name: Smoke stats
         id: stats
@@ -142,6 +150,55 @@ jobs:
           vercel link --yes --project bumpt --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
           url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"})"
           echo "Vercel production: $url"
+
+  # Live post-deploy smoke: probes the live site after deploy. Read-only and scoped
+  # to the dedicated `test` member (excluded from demand metrics) so it MUST NOT
+  # increment any public count — it never POSTs /api/bump-request. It asserts the
+  # site is up and the scan-origination rule renders (scanned About enables the ask;
+  # direct About disables it). Skipped if deploy was skipped (gate red).
+  live-smoke:
+    needs: deploy
+    if: ${{ always() && needs.deploy.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read-only live probe (test member, no count writes)
+        env:
+          PROD_URL: ${{ vars.PROD_URL }}
+        run: |
+          base="${PROD_URL:-https://bumpt.io}"
+          echo "live-smoke: $base"
+          fail=0
+
+          # Home + privacy must be up.
+          for p in / /privacy; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base$p")
+            echo "  GET $p -> $code"
+            [ "$code" = "200" ] || { echo "::error::$p returned $code"; fail=1; }
+          done
+
+          # Scan the dedicated test member (excluded from demand metrics).
+          card=$(curl -s "$base/m/test")
+          # Pull the threaded scan_id out of the About link.
+          scan=$(printf '%s' "$card" | grep -oE 's=[0-9a-fA-F-]{36}' | head -n1 | cut -d= -f2)
+          echo "  /m/test scan_id=${scan:-<none>}"
+          [ -n "$scan" ] || { echo "::error::/m/test did not render a scan link"; fail=1; }
+
+          # Scanned About enables the ask (form present). Read-only: we do NOT submit it.
+          if [ -n "$scan" ]; then
+            scanned=$(curl -s "$base/about?m=test&s=$scan")
+            printf '%s' "$scanned" | grep -q 'action="/api/bump-request"' \
+              || { echo "::error::scanned /about did not render the ask form"; fail=1; }
+          fi
+
+          # Direct About disables the ask and shows the scan-first rule.
+          direct=$(curl -s "$base/about")
+          printf '%s' "$direct" | grep -q 'Scan a member first' \
+            || { echo "::error::direct /about missing the scan-first rule"; fail=1; }
+          printf '%s' "$direct" | grep -q 'action="/api/bump-request"' \
+            && { echo "::error::direct /about exposed the ask form"; fail=1; }
+
+          [ "$fail" = "0" ] && echo "live-smoke: ok (read-only, no public counts touched)"
+          exit "$fail"
 
   # Pre-deploy notification: runs after the gate regardless of result.
   # Green is short (headline + aggregate); red is detailed (per-step breakdown).

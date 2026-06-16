@@ -13,11 +13,11 @@ export async function GET(req: NextRequest) {
     return new NextResponse('unauthorized', { status: 401 });
   }
 
-  const [members, scans, abouts, wantIns, sessions] = await Promise.all([
+  const [members, scans, abouts, bumpRequests, sessions] = await Promise.all([
     sql`select id, bump_name from members`,
     sql`select scan_id, member_id, context from scan_events`,
     sql`select scan_id, member_id from about_events`,
-    sql`select scan_id, member_id from want_ins`,
+    sql`select scan_id, member_id, device_id from bump_request_events`,
     sql`select member_id, context, started_at, ended_at from exposure_sessions`,
   ]);
 
@@ -43,19 +43,19 @@ export async function GET(req: NextRequest) {
     (aboutScanIds[key(member, context)] ??= new Set()).add(a.scan_id ?? `noscan:${Math.random()}`);
   }
 
-  const wantCount: Record<string, number> = {};
-  for (const w of wantIns) {
+  const bumpCount: Record<string, number> = {};
+  for (const w of bumpRequests) {
     const info = w.scan_id ? scanMap.get(w.scan_id) : undefined;
     const member = info?.member ?? w.member_id;
     const context = info?.context ?? 'unknown';
     if (!member) continue;
-    wantCount[key(member, context)] = (wantCount[key(member, context)] ?? 0) + 1;
+    bumpCount[key(member, context)] = (bumpCount[key(member, context)] ?? 0) + 1;
   }
 
   const rate = (num: number, den: number) => (den > 0 ? (num / den).toFixed(3) : '');
   const rows = [[
     'member_id', 'bump_name', 'context', 'exposure_hours', 'scans', 'scans_per_hour',
-    'about_opens', 'want_ins', 'scan_to_about_rate', 'about_to_wantin_rate', 'scan_to_wantin_rate',
+    'about_opens', 'bump_requests', 'scan_to_about_rate', 'about_to_bump_request_rate', 'scan_to_bump_request_rate',
   ]];
   for (const m of members) {
     for (const c of CONTEXTS) {
@@ -63,10 +63,10 @@ export async function GET(req: NextRequest) {
       const h = hours(exposureMs[k] ?? 0);
       const scansN = scanCount[k] ?? 0;
       const opens = aboutScanIds[k]?.size ?? 0;
-      const wants = wantCount[k] ?? 0;
+      const bumps = bumpCount[k] ?? 0;
       rows.push([
         m.id, m.bump_name, c, h.toFixed(3), String(scansN), h > 0 ? (scansN / h).toFixed(3) : '',
-        String(opens), String(wants), rate(opens, scansN), rate(wants, opens), rate(wants, scansN),
+        String(opens), String(bumps), rate(opens, scansN), rate(bumps, opens), rate(bumps, scansN),
       ]);
     }
   }
