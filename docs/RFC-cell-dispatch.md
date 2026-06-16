@@ -90,7 +90,7 @@ Model the issue tracker as a kanban board using GitHub **labels** as columns.
 |-------|--------|-------------|----------------------|
 | `status:backlog` | Backlog | Planner (on open) | ignore — under discussion |
 | `status:ready` | Ready | Planner, once refined | ignore — agreed, not yet committed |
-| `status:todo` | To Do | **Human** (or Planner on human instruction) | **claim & build** — the dispatch gate |
+| `status:todo` | To Do | **Human** | **claim & build** — the dispatch gate |
 | `status:in-progress` | In Progress | Implementer (on claim) | working; don't re-pick |
 | `status:review` | Review | Implementer (when done, with receipt) | awaiting human/planner acceptance |
 | `status:blocked` | Blocked | Implementer | needs human input; returns to discussion |
@@ -102,6 +102,11 @@ The single rule that matters: **only `status:todo` causes the implementer to
 start.** Everything else is inert to it. So an issue can sit in Backlog/Ready
 being authored and argued over indefinitely with no risk of premature execution.
 
+**The gate is human-only.** `status:todo` is applied by a human. The planner may
+apply it *only* when the issue contains an explicit human approval comment, which
+the planner must quote in its dispatch comment. There is no path by which the
+planner commits work on its own initiative.
+
 ### Lifecycle
 
 ```
@@ -111,7 +116,7 @@ Planner opens issue ─ status:backlog
         │
    human commits ─────► status:todo        ← the only state that starts a build
         │
-   implementer claims ─ status:todo → status:in-progress (atomic swap)
+   implementer claims ─ status:todo → status:in-progress (serialized claim, see below)
         │
    builds on code branch, runs CI, writes a receipt
         │
@@ -129,12 +134,21 @@ The wake job's "ship" behavior acts on:
 
 > open issues labeled `status:todo` **and not** `status:in-progress`.
 
-On claim it atomically swaps `status:todo → status:in-progress`. Two safeguards
-against double-execution:
+GitHub labels are not a compare-and-swap primitive, so "claim" is a **serialized
+claim operation**, not an atomic swap:
 
-1. The wake job is **serialized** (only one wake runs at a time; new triggers
-   queue).
-2. The label swap means a second wake sees no `status:todo` to claim.
+1. re-read the issue's current labels;
+2. verify `status:todo` is still present and `status:in-progress` is absent;
+3. remove `status:todo`, add `status:in-progress`;
+4. write a claim comment recording the run id / worker id.
+
+The "no double-execution" guarantee then rests on four things together, not on a
+single atomic operation:
+
+- **serialized wake concurrency** (only one wake runs at a time; new triggers queue);
+- **claim-time re-read** of labels before acting;
+- the **`status:in-progress` label** as the visible claim;
+- the **run-id claim comment** as an auditable record of who claimed it.
 
 Triggers: the GitHub `issue labeled` event (react the moment a human applies
 `status:todo`), plus the existing schedule as a backstop sweep in case an event
