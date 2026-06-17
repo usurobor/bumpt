@@ -96,7 +96,7 @@ jobs:
           const screens = fs.readdirSync('screens').filter(d => fs.existsSync(`screens/${d}/view.html`));
           fs.mkdirSync('diff', { recursive: true });
           const browser = await chromium.launch();
-          let fails = 0; const rows = [];
+          let fails = 0; const rows = []; const failed = [];
           const shoot = async (ctx, url) => {
             const p = await ctx.newPage();
             await p.goto(url, { waitUntil: 'networkidle' });
@@ -111,15 +111,16 @@ jobs:
             const dep = PNG.sync.read(await shoot(ctx, `${BASE}/${s}/`));
             await ctx.close();
             if (src.width !== dep.width || src.height !== dep.height) {
-              rows.push(`${s}: SIZE MISMATCH src ${src.width}x${src.height} vs dep ${dep.width}x${dep.height}`); fails++; continue;
+              rows.push(`${s}: SIZE MISMATCH src ${src.width}x${src.height} vs dep ${dep.width}x${dep.height}`); fails++; failed.push(s); continue;
             }
             const { width, height } = src; const diff = new PNG({ width, height });
             const n = pixelmatch(src.data, dep.data, diff.data, width, height, { threshold: 0.1 });
             const pct = 100 * n / (width * height);
             rows.push(`${s}: ${n}px diff (${pct.toFixed(3)}%)`);
-            if (pct > 0.5) { fails++; fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
+            if (pct > 0.5) { fails++; failed.push(s); fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
           }
           await browser.close();
+          fs.writeFileSync('diff/result.json', JSON.stringify({ total: screens.length, failed, rows }));
           console.log('\n' + rows.join('\n'));
           if (fails) { console.error(`\n${fails} screen(s) differ from source`); process.exit(1); }
           console.log('\nvisual match ✓ — deployed == source');
@@ -132,6 +133,38 @@ jobs:
         with:
           name: visual-diffs
           path: diff/
+
+      - name: Notify Telegram (design match)
+        if: always()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_TOPIC: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ] || { echo "telegram not configured; skip"; exit 0; }
+          msg=(); [ -n "$TG_TOPIC" ] && msg=(-d message_thread_id="$TG_TOPIC")
+          send(){ curl -sS "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            -d chat_id="$TG_CHAT" "${msg[@]}" -d parse_mode=HTML -d disable_web_page_preview=true \
+            --data-urlencode text="$1" >/dev/null || true; }
+          if [ -f diff/result.json ]; then
+            total=$(jq -r '.total' diff/result.json)
+            nfail=$(jq -r '.failed | length' diff/result.json)
+            if [ "$nfail" = "0" ]; then
+              send "✅ <b>design.bumpt.io</b> deployed — all ${total} screens match their mocks."
+            else
+              names=$(jq -r '.failed | join(", ")' diff/result.json)
+              send "❌ <b>design.bumpt.io</b> — $((total - nfail))/${total} match; ${nfail} differ: <b>${names}</b>. Diffs attached."
+              pmsg=(); [ -n "$TG_TOPIC" ] && pmsg=(-F message_thread_id="$TG_TOPIC")
+              for f in $(jq -r '.failed[]' diff/result.json); do
+                [ -f "diff/$f.png" ] && curl -sS "https://api.telegram.org/bot$TG_TOKEN/sendPhoto" \
+                  -F chat_id="$TG_CHAT" "${pmsg[@]}" -F caption="design.bumpt.io · ${f} diff (deployed vs mock)" \
+                  -F photo=@"diff/$f.png" >/dev/null || true
+              done
+            fi
+          else
+            send "⚠️ <b>design.bumpt.io</b> build failed before the visual check (status: ${JOB_STATUS})."
+          fi
 
       - name: Summary
         run: |
