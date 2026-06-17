@@ -1,9 +1,10 @@
-name: Design preview (design.bumpt.io)
+name: Design build & deploy (design.bumpt.io)
 
-# Deploys the static screens/ mockups to a dedicated Vercel project (bump-design)
-# and attaches design.bumpt.io. Runs from main (where design/ lives); self-triggers
-# on changes to design/ or this file. After the first run, add the printed CNAME
-# at Squarespace (design -> cname.vercel-dns.com) to finish DNS + cert.
+# The "wake" build for the design site. Source of truth is screens/*/view.html
+# (+ spec.md) on main. This action assembles the deployable site (root index +
+# each screen at /<name>/), publishes it to the design branch (a pure build
+# artifact, force-updated each run), and deploys it to design.bumpt.io.
+# Self-triggers on any change under screens/ (or this file).
 #
 # Required secret: VERCEL_TOKEN   Optional: VERCEL_SCOPE (team slug)
 
@@ -16,14 +17,11 @@ on:
       - .github/workflows/design-deploy.yml
 
 permissions:
-  contents: read
+  contents: write          # publish the design branch
 
 jobs:
-  deploy:
+  build-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: screens
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       SCOPE: ${{ secrets.VERCEL_SCOPE }}
@@ -33,51 +31,48 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Vercel CLI
-        run: npm i -g vercel@latest
-
-      - name: Preflight
-        run: '[ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN secret is not set"; exit 1; }'
-
-      - name: Link / create project (bump-design, root = design)
-        run: vercel link --yes --project bump-design --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
-
-      - name: Deploy (static)
-        id: deploy
+      - name: Build site from screens/
         run: |
+          set -e
+          rm -rf dist && mkdir -p dist
+          screens=$(cd screens && ls -d */ | sed 's#/##')
+          # each screen -> /<name>/index.html, with flow links rewritten to dir routes
+          for s in $screens; do
+            mkdir -p "dist/$s"
+            sed 's#\.\./\([a-z][a-z]*\)/view.html#../\1/#g' "screens/$s/view.html" > "dist/$s/index.html"
+          done
+          # root index — the common board
+          {
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            echo '<title>bump — screens</title>'
+            echo '<style>body{margin:0;min-height:100dvh;background:radial-gradient(900px 600px at 50% -10%,#131318,#09090a 56%) fixed,#09090a;color:#ECEAE3;font-family:"Space Mono",ui-monospace,monospace;display:flex;justify-content:center}.w{width:100%;max-width:560px;padding:64px 28px}h1{font-size:22px;letter-spacing:-.6px;margin:0 0 28px}a{display:block;color:#ECEAE3;text-decoration:none;border-top:1px solid rgba(236,234,227,.11);padding:18px 4px;transition:color .2s,padding .2s}a:last-child{border-bottom:1px solid rgba(236,234,227,.11)}a:hover{color:#7C77FF;padding-left:10px}</style>'
+            echo '</head><body><div class="w"><h1>bump — screens</h1>'
+            for s in $screens; do echo "<a href=\"./$s/\">$s</a>"; done
+            echo '</div></body></html>'
+          } > dist/index.html
+          echo "built:"; find dist -type f | sort
+
+      - name: Deploy to Vercel (design.bumpt.io)
+        working-directory: dist
+        run: |
+          npm i -g vercel@latest
           scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
+          vercel link --yes --project bump-design --token "$VERCEL_TOKEN" "${scope_args[@]}"
           url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" "${scope_args[@]}")"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed: $url"
+          rm -rf .vercel
 
-      - name: Attach design.bumpt.io + show required DNS
+      - name: Publish to design branch (build artifact)
         run: |
-          auth=(-H "Authorization: Bearer $VERCEL_TOKEN")
-          TID=$(curl -sS "${auth[@]}" https://api.vercel.com/v2/teams | jq -r '.teams[]? | select(.slug=="usurobor-1186s-projects") | .id')
-          q=""; [ -n "$TID" ] && [ "$TID" != "null" ] && q="?teamId=$TID"
-          echo "teamId: ${TID:-<none>}"
-          api(){ curl -sS -w '\n[HTTP %{http_code}]\n' "${auth[@]}" "$@"; }
-          echo "== attach design.bumpt.io to bump-design =="
-          api -X POST "https://api.vercel.com/v10/projects/bump-design/domains$q" \
-            -H "Content-Type: application/json" -d '{"name":"design.bumpt.io"}'
-          echo "== required DNS (recommendedCNAME is what to add at Squarespace) =="
-          curl -sS "${auth[@]}" "https://api.vercel.com/v6/domains/design.bumpt.io/config$q" \
-            | jq '{misconfigured, recommendedCNAME, cnames}' || true
-
-      - name: Probe (will be misconfigured until the CNAME is added)
-        run: |
-          curl -sS -m 15 -o /dev/null -w 'https://design.bumpt.io -> HTTP %{http_code}\n' https://design.bumpt.io \
-            || echo "design.bumpt.io not resolving yet (add the CNAME at Squarespace)"
+          cd dist
+          git init -q -b design
+          git config user.email "noreply@anthropic.com"
+          git config user.name "bump-design build"
+          git add -A
+          git commit -q -m "build: design site from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" design
 
       - name: Summary
         run: |
-          {
-            echo "### Design preview"
-            echo ""
-            echo "**Deployment:** ${{ steps.deploy.outputs.url }}"
-            echo ""
-            echo "Next (one DNS record at Squarespace):"
-            echo "- CNAME · host \`design\` · value \`cname.vercel-dns.com\` (or the recommendedCNAME printed above)"
-            echo ""
-            echo "Then https://design.bumpt.io serves design/index.html (cert auto-issues)."
-          } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### design.bumpt.io"; echo ""; echo "- built ${{ github.sha }} → design branch → deployed"; } >> "$GITHUB_STEP_SUMMARY"
