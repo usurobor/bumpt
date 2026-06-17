@@ -1,6 +1,6 @@
 name: Design preview (design.bumpt.io)
 
-# Deploys the static design/ screens to a dedicated Vercel project (bump-design)
+# Deploys the static screens/ mockups to a dedicated Vercel project (bump-design)
 # and attaches design.bumpt.io. Runs from main (where design/ lives); self-triggers
 # on changes to design/ or this file. After the first run, add the printed CNAME
 # at Squarespace (design -> cname.vercel-dns.com) to finish DNS + cert.
@@ -12,7 +12,7 @@ on:
   push:
     branches: [main]
     paths:
-      - design/**
+      - screens/**
       - .github/workflows/design-deploy.yml
 
 permissions:
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: design
+        working-directory: screens
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       SCOPE: ${{ secrets.VERCEL_SCOPE }}
