@@ -9,14 +9,15 @@ match** — it is not the running app.
 
 | File | Screen | Route it mirrors |
 |------|--------|------------------|
-| [`index.html`](./index.html) | locked door / **home** — served at the site root | `/` |
+| [`index.html`](./index.html) | **index** — a plain list of links to the screens (site root) | — |
+| [`home.html`](./home.html) | locked door | `/` |
 | [`card.html`](./card.html) | scanned member card | `/m/<member>` |
 | [`about.html`](./about.html) | no-signup / ask | `/about` |
 | [`thanks.html`](./thanks.html) | live knock count | `/thanks` |
-| [`gallery.html`](./gallery.html) | gallery of all four (each tile is the real screen via iframe) | — |
+| [`gallery.html`](./gallery.html) | all four in device frames (each tile is the real screen via iframe) | — |
 
-`design.bumpt.io` opens the **Home** screen (`index.html`). The gallery lives at
-`design.bumpt.io/gallery.html`.
+`design.bumpt.io` opens the **index** (links to every screen). `gallery.html` is
+the device-framed view.
 
 The flow is clickable: **card → about → thanks** (each "Ask to bump" coheres the
 mark, then navigates).
