@@ -87,10 +87,11 @@ jobs:
         run: |
           npm i --no-save playwright pixelmatch pngjs
           npx playwright install --with-deps chromium
-          cat > /tmp/vcheck.mjs <<'EOF'
+          cat > vcheck.mjs <<'EOF'
           import { chromium } from 'playwright';
           import fs from 'node:fs'; import path from 'node:path';
-          import { PNG } from 'pngjs'; import pixelmatch from 'pixelmatch';
+          import pngjs from 'pngjs'; const { PNG } = pngjs;
+          import pixelmatch from 'pixelmatch';
           const BASE = 'https://design.bumpt.io';
           const screens = fs.readdirSync('screens').filter(d => fs.existsSync(`screens/${d}/view.html`));
           fs.mkdirSync('diff', { recursive: true });
@@ -123,7 +124,7 @@ jobs:
           if (fails) { console.error(`\n${fails} screen(s) differ from source`); process.exit(1); }
           console.log('\nvisual match ✓ — deployed == source');
           EOF
-          node /tmp/vcheck.mjs
+          node vcheck.mjs
 
       - name: Upload visual diffs
         if: failure()
