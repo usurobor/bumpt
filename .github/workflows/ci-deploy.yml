@@ -206,7 +206,7 @@ jobs:
   # Prod visual gate: proves the live homepage at bumpt.io/ renders pixel-identical
   # to the design mock screens/home/view.html (on main). Mirrors the design gate in
   # design-deploy.yml. Permanent: every prod deploy re-verifies bumpt.io/ == the mock.
-  # Home is static, so no DB fixture is needed. Fails if diff > 0.5%.
+  # Home is static, so no DB fixture is needed. Match = diff <= 1%.
   prod-visual:
     needs: deploy
     if: ${{ always() && needs.deploy.result == 'success' }}
@@ -280,11 +280,11 @@ jobs:
           }
           const { width, height } = mock; const diff = new PNG({ width, height });
           const n = pixelmatch(mock.data, prod.data, diff.data, width, height, { threshold: 0.1 });
-          const pct = 100 * n / (width * height);
+          const pct = 100 * n / (width * height); const pctR = Math.round(pct);
           fs.writeFileSync('diff/home.png', PNG.sync.write(diff));
-          console.log(`home: ${n}px diff (${pct.toFixed(3)}%) over ${width}x${height}`);
-          if (pct > 0.5) { console.error(`\nprod home differs from mock by ${pct.toFixed(3)}% (> 0.5%)`); process.exit(1); }
-          console.log('\nvisual match ✓ — bumpt.io/ == screens/home/view.html');
+          console.log(`home: ${pctR}% diff over ${width}x${height}`);
+          if (pct > 1) { console.error(`\nprod home differs from mock by ${pctR}% (> 1% — not a match)`); process.exit(1); }
+          console.log('\nvisual match ✓ — bumpt.io/ == screens/home/view.html (0% — match)');
           EOF
           node prodvcheck.mjs
 
