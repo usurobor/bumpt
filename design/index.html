@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>bump — screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#09090a;--surface:#0c0c0e;--bone:#ECEAE3;--bone-dim:#a2a2a8;--mute:#66666d;
+    --hair:rgba(236,234,227,0.11);--coh:#7C77FF;
+    --display:"Space Grotesk","Helvetica Neue",Arial,sans-serif;--mono:"Space Mono",ui-monospace,monospace;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:radial-gradient(1300px 800px at 50% -12%,#131318 0%,var(--ink) 56%) fixed,var(--ink);
+    color:var(--bone);font-family:var(--display);-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .wrap{max-width:1240px;margin:0 auto;padding:54px 28px 96px;}
+  .masthead{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;
+    padding-bottom:22px;margin-bottom:30px;border-bottom:1px solid var(--hair);}
+  .word{font-family:var(--mono);font-weight:700;font-size:23px;letter-spacing:-0.7px;}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--mute);line-height:1.7;text-align:right;}
+  .meta b{color:var(--bone-dim);font-weight:400;}
+  .swatches{display:flex;gap:0;margin-bottom:46px;flex-wrap:wrap;font-family:var(--mono);}
+  .sw{display:flex;align-items:center;gap:9px;padding:9px 18px 9px 0;}
+  .sw i{width:13px;height:13px;border-radius:50%;border:1px solid var(--hair);}
+  .sw span{font-size:10.5px;color:var(--mute);}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:54px 38px;justify-items:center;align-items:start;}
+  .slot{width:100%;max-width:354px;}
+  .cap{display:flex;align-items:baseline;gap:10px;margin:0 6px 15px;font-family:var(--mono);}
+  .cap a{color:var(--bone);font-size:12.5px;text-decoration:none;border-bottom:1px solid var(--hair);}
+  .cap .job{color:var(--mute);font-size:11px;margin-left:auto;}
+  .device{position:relative;width:100%;aspect-ratio:390/810;border-radius:46px;padding:11px;
+    background:linear-gradient(155deg,#222227,#0c0c0f 60%);
+    box-shadow:0 1px 0 rgba(255,255,255,0.07) inset,0 40px 80px -32px rgba(0,0,0,0.9),0 0 0 1px rgba(0,0,0,0.6);}
+  .device .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:25px;
+    background:#000;border-radius:0 0 16px 16px;z-index:40;}
+  .device iframe{width:100%;height:100%;border:0;border-radius:36px;background:var(--surface);display:block;}
+  .footnote{margin-top:58px;padding-top:22px;border-top:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;color:var(--mute);line-height:1.85;}
+  .footnote b{color:var(--bone-dim);font-weight:400;} .footnote .coh{color:var(--coh);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="word">bump</div>
+    <div class="meta">screens · v0.1<br><b>each tile is the real screen — open it directly for full-bleed</b></div>
+  </div>
+  <div class="swatches">
+    <div class="sw"><i style="background:#09090a"></i><span>ink · #09090A</span></div>
+    <div class="sw"><i style="background:#ECEAE3"></i><span>bone · #ECEAE3</span></div>
+    <div class="sw"><i style="background:#66666d"></i><span>mute · #66666D</span></div>
+    <div class="sw"><i style="background:#7C77FF"></i><span>coherence · #7C77FF</span></div>
+    <div class="sw"><span style="color:var(--bone-dim);font-size:10.5px;">Space&nbsp;Grotesk / Space&nbsp;Mono</span></div>
+  </div>
+
+  <div class="gallery">
+    <div class="slot">
+      <div class="cap"><a href="home.html" target="_blank" rel="noopener">home.html</a><span class="job">locked door</span></div>
+      <div class="device"><div class="notch"></div><iframe src="home.html" title="home" loading="lazy"></iframe></div>
+    </div>
+    <div class="slot">
+      <div class="cap"><a href="card.html" target="_blank" rel="noopener">card.html</a><span class="job">scanned · /m/a</span></div>
+      <div class="device"><div class="notch"></div><iframe src="card.html" title="card" loading="lazy"></iframe></div>
+    </div>
+    <div class="slot">
+      <div class="cap"><a href="about.html" target="_blank" rel="noopener">about.html</a><span class="job">no signup</span></div>
+      <div class="device"><div class="notch"></div><iframe src="about.html" title="about" loading="lazy"></iframe></div>
+    </div>
+    <div class="slot">
+      <div class="cap"><a href="thanks.html" target="_blank" rel="noopener">thanks.html</a><span class="job">live count</span></div>
+      <div class="device"><div class="notch"></div><iframe src="thanks.html" title="thanks" loading="lazy"></iframe></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>The look is one idea:</b> <span class="coh">cohering</span>. The logo is a single ring — whole at rest (the room before a bump), drawing itself into one when something coheres. Bone-on-black with hairlines is the resting quiet; the one accent, <span class="coh">coherence violet</span>, appears only at the moment of a bump — the mark, the action, the count — and nowhere else. Type is Space Grotesk for human lines, Space Mono for everything structural. Source: <b>reference/01_bumplookandfeel.html</b>.
+  </div>
+</div>
+</body>
+</html>
