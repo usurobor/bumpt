@@ -96,34 +96,54 @@ jobs:
           const screens = fs.readdirSync('screens').filter(d => fs.existsSync(`screens/${d}/view.html`));
           fs.mkdirSync('diff', { recursive: true });
           const browser = await chromium.launch();
-          let fails = 0; const rows = []; const failed = [];
+          const rows = []; const failed = [];
           const shoot = async (ctx, url) => {
             const p = await ctx.newPage();
             await p.goto(url, { waitUntil: 'networkidle' });
             try { await p.evaluate(() => document.fonts.ready); } catch {}
             await p.waitForTimeout(500);
             const buf = await p.screenshot({ fullPage: true });
-            await p.close(); return buf;
+            return { p, buf };
+          };
+          const requiredComponents = (s) => {
+            try {
+              const m = fs.readFileSync(`screens/${s}/spec.md`, 'utf8').match(/required-components:\s*([^\n>]*)/);
+              return m ? m[1].split(',').map(x => x.trim()).filter(Boolean) : [];
+            } catch { return []; }
           };
           for (const s of screens) {
+            const reasons = []; let pctR = 0;
             const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, reducedMotion:'reduce' });
-            const src = PNG.sync.read(await shoot(ctx, 'file://' + path.resolve(`screens/${s}/view.html`)));
-            const dep = PNG.sync.read(await shoot(ctx, `${BASE}/${s}/`));
-            await ctx.close();
-            if (src.width !== dep.width || src.height !== dep.height) {
-              rows.push(`${s}: SIZE MISMATCH src ${src.width}x${src.height} vs dep ${dep.width}x${dep.height}`); fails++; failed.push(s); continue;
+            const a = await shoot(ctx, 'file://' + path.resolve(`screens/${s}/view.html`));
+            const src = PNG.sync.read(a.buf); await a.p.close();
+            const b = await shoot(ctx, `${BASE}/${s}/`);
+            const dep = PNG.sync.read(b.buf);
+            // component presence: every required component must render (non-zero box)
+            const missing = [];
+            for (const c of requiredComponents(s)) {
+              const box = await b.p.locator(`[data-component="${c}"]`).first().boundingBox().catch(() => null);
+              if (!box || !box.width || !box.height) missing.push(c);
             }
-            const { width, height } = src; const diff = new PNG({ width, height });
-            const n = pixelmatch(src.data, dep.data, diff.data, width, height, { threshold: 0.1 });
-            const pct = 100 * n / (width * height); const pctR = Math.round(pct);
-            rows.push(`${s}: ${pctR}% diff${pct > 1 ? '' : ' — match'}`);
-            if (pct > 1) { fails++; failed.push(s); fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
+            await b.p.close(); await ctx.close();
+            // pixel: deployed vs mock
+            if (src.width !== dep.width || src.height !== dep.height) {
+              reasons.push(`size ${src.width}x${src.height} != ${dep.width}x${dep.height}`);
+            } else {
+              const { width, height } = src; const diff = new PNG({ width, height });
+              const n = pixelmatch(src.data, dep.data, diff.data, width, height, { threshold: 0.1 });
+              pctR = Math.round(100 * n / (width * height));
+              if (pctR > 1) { reasons.push(`${pctR}% diff`); fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
+            }
+            if (missing.length) reasons.push(`missing component(s): ${missing.join(', ')}`);
+            if (reasons.length) { failed.push(s); rows.push(`${s}: FAIL — ${reasons.join(' · ')}`); }
+            else rows.push(`${s}: ${pctR}% — match, components ok`);
           }
           await browser.close();
-          fs.writeFileSync('diff/result.json', JSON.stringify({ total: screens.length, failed, rows }));
+          const failtext = failed.map(s => rows.find(r => r.startsWith(s + ':'))).join('\n');
+          fs.writeFileSync('diff/result.json', JSON.stringify({ total: screens.length, failed, rows, failtext }));
           console.log('\n' + rows.join('\n'));
-          if (fails) { console.error(`\n${fails} screen(s) differ from source`); process.exit(1); }
-          console.log('\nvisual match ✓ — deployed == source');
+          if (failed.length) { console.error(`\n${failed.length} screen(s) failed: ${failed.join(', ')}`); process.exit(1); }
+          console.log('\nall screens match + required components present ✓');
           EOF
           node vcheck.mjs
 
@@ -153,8 +173,11 @@ jobs:
             if [ "$nfail" = "0" ]; then
               send "✅ <b>design.bumpt.io</b> deployed — all ${total} screens match their mocks."
             else
-              names=$(jq -r '.failed | join(", ")' diff/result.json)
-              send "❌ <b>design.bumpt.io</b> — $((total - nfail))/${total} match; ${nfail} differ: <b>${names}</b>. Diffs attached."
+              detail=$(jq -r '.failtext // (.failed | join(", "))' diff/result.json)
+              send "❌ <b>design.bumpt.io</b> — $((total - nfail))/${total} ok; ${nfail} failed:
+${detail}
+
+Diffs attached where visual."
               pmsg=(); [ -n "$TG_TOPIC" ] && pmsg=(-F message_thread_id="$TG_TOPIC")
               for f in $(jq -r '.failed[]' diff/result.json); do
                 [ -f "diff/$f.png" ] && curl -sS "https://api.telegram.org/bot$TG_TOKEN/sendPhoto" \

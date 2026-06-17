@@ -20,6 +20,11 @@ prod render == view.html  (screenshots)  ✅  →  done
 **Match = diff ≤ 1%**, reported as a whole percent (a true match reads `0%`). Sub-percent
 noise is just anti-aliasing — not worth reporting at decimal precision.
 
+Each gate also runs a **component-presence check**: every component the spec marks
+required (`<!-- required-components: … -->`, tagged in the view as `data-component`) must
+render (non-zero box). A missing required component fails the build — that's what catches
+e.g. a dropped logo. (Pixel diff alone can't: if the mock itself lacks it, both sides match.)
+
 Two visual gates, same method (Playwright + pixelmatch, 390×844 @2x, reduced-motion):
 
 - **design gate** (`design-deploy.yml`): `design.bumpt.io/<s>/` vs `screens/<s>/view.html`.

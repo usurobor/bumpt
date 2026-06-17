@@ -1,9 +1,18 @@
 # screens/ — bump screens (source of truth)
 
-One folder per screen. Each holds two files:
+One folder per screen, two files — the **Tapestry/MVVM split**:
 
-- **`view.html`** — the screen, pixel-perfect and **self-contained** (inline CSS/JS, opens anywhere).
-- **`spec.md`** — route, copy, acceptance.
+- **`view.html`** — the desired *look* (the View): pixel-perfect, self-contained, opens
+  anywhere. Named parts carry `data-component="<name>"`; on the real screen some are
+  substituted by live data.
+- **`spec.md`** — the *meaning* (the ViewModel): the **Components** table (name · shows ·
+  data source · required), **Behavior** (events → effects), and **Acceptance**. A top
+  comment lists the machine-checked required set:
+  `<!-- required-components: logo, headline, rule -->`.
+
+The view says what it looks like; the spec says what it is and does. The gates check
+both: **prod ≈ view** (pixel ≤ 1%) and **required components render** (non-zero box) on
+the deployed/prod page — a missing required component fails the build.
 
 ```
 screens/

@@ -43,7 +43,9 @@ body{
 
 .top{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;}
 .top .wm{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:-0.4px;color:var(--bone);}
-.top .wm .mark{width:18px;height:18px;}
+.top .wm .mark{width:22px;height:22px;}
+.top .wm .mark .ring{stroke-opacity:.85;}
+.top .wm .mark .station{fill-opacity:.55;}
 .top .st{font-family:var(--mono);font-size:10px;color:var(--mute);letter-spacing:0.6px;text-transform:uppercase;}
 
 .body{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;}
@@ -197,19 +199,19 @@ body{
   <main class="screen">
     <div class="view">
       <div class="top">
-        <span class="wm" data-cohere-self><span class="mark whole" data-mark></span>bump</span>
+        <span class="wm" data-cohere-self><span class="mark whole" data-mark data-component="logo"></span><span data-component="wordmark">bump</span></span>
         <span class="st">in person only</span>
       </div>
       <div class="body">
         <div class="grow" style="flex:0 0 34px;"></div>
-        <h2 class="dxl">you can't<br>join online.</h2>
-        <p class="lede">A worn tag. An in-person bump. There is nothing here to sign up for.</p>
+        <h2 class="dxl" data-component="headline">you can't<br>join online.</h2>
+        <p class="lede" data-component="lede">A worn tag. An in-person bump. There is nothing here to sign up for.</p>
         <div class="grow"></div>
         <div class="div"><span class="ln"></span><span class="node"></span><span class="ln"></span></div>
         <p class="kick" style="margin-bottom:11px;">the rule</p>
-        <p class="note"><b>Membership begins only when a member bumps you in — face to face.</b> No invite link, no email code, no signup. If you weren't there, you're not in.</p>
+        <p class="note" data-component="rule"><b>Membership begins only when a member bumps you in — face to face.</b> No invite link, no email code, no signup. If you weren't there, you're not in.</p>
         <div class="grow"></div>
-        <div class="foot"><span>private by default</span>·<span>no feed</span>·<span>no accounts to search</span></div>
+        <div class="foot" data-component="footer"><span>private by default</span>·<span>no feed</span>·<span>no accounts to search</span></div>
         <div class="foot" style="margin-top:13px;"><a href="#">protocol</a><a href="#">privacy</a></div>
       </div>
     </div>
