@@ -6,7 +6,6 @@ short **spec** (route, copy, acceptance). The experiment app is built to match.
 ```
 screens/
   app.css, bump.js        # shared design system
-  reference/              # original look & feel (html + pdf)
   index.html              # link board (served at design.bumpt.io)
   home/   mock.html  spec.md
   card/   mock.html  spec.md
