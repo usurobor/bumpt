@@ -73,17 +73,64 @@ jobs:
           git commit -q -m "build: design site from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" design
 
-      - name: Verify live (design.bumpt.io)
+      - name: Wait for the new build to be live
         run: |
-          for i in 1 2 3 4 5 6; do
-            read code sv < <(curl -sS -m 15 -o /dev/null -w '%{http_code} %{ssl_verify_result}' https://design.bumpt.io 2>/dev/null || echo "000 1")
-            echo "attempt $i: https://design.bumpt.io -> HTTP $code (ssl_verify=$sv)"
-            [ "$code" = "200" ] && [ "$sv" = "0" ] && { echo "live ✓"; break; }
+          for i in $(seq 1 10); do
+            code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' https://design.bumpt.io/ || echo 000)
+            echo "wait $i: https://design.bumpt.io/ -> HTTP $code"
+            [ "$code" = "200" ] && break
             sleep 8
           done
-          h=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' https://design.bumpt.io/home/ 2>/dev/null || echo 000)
-          echo "https://design.bumpt.io/home/ -> HTTP $h"
-          [ "$code" = "200" ] || echo "::warning::design.bumpt.io not 200 yet (cert may still be issuing)"
+          [ "$code" = "200" ] || { echo "::error::design.bumpt.io not serving (HTTP $code)"; exit 1; }
+
+      - name: Visual check — deployed screens match source
+        run: |
+          npm i --no-save playwright pixelmatch pngjs
+          npx playwright install --with-deps chromium
+          cat > /tmp/vcheck.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs'; import path from 'node:path';
+          import { PNG } from 'pngjs'; import pixelmatch from 'pixelmatch';
+          const BASE = 'https://design.bumpt.io';
+          const screens = fs.readdirSync('screens').filter(d => fs.existsSync(`screens/${d}/view.html`));
+          fs.mkdirSync('diff', { recursive: true });
+          const browser = await chromium.launch();
+          let fails = 0; const rows = [];
+          const shoot = async (ctx, url) => {
+            const p = await ctx.newPage();
+            await p.goto(url, { waitUntil: 'networkidle' });
+            try { await p.evaluate(() => document.fonts.ready); } catch {}
+            await p.waitForTimeout(500);
+            const buf = await p.screenshot({ fullPage: true });
+            await p.close(); return buf;
+          };
+          for (const s of screens) {
+            const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, reducedMotion:'reduce' });
+            const src = PNG.sync.read(await shoot(ctx, 'file://' + path.resolve(`screens/${s}/view.html`)));
+            const dep = PNG.sync.read(await shoot(ctx, `${BASE}/${s}/`));
+            await ctx.close();
+            if (src.width !== dep.width || src.height !== dep.height) {
+              rows.push(`${s}: SIZE MISMATCH src ${src.width}x${src.height} vs dep ${dep.width}x${dep.height}`); fails++; continue;
+            }
+            const { width, height } = src; const diff = new PNG({ width, height });
+            const n = pixelmatch(src.data, dep.data, diff.data, width, height, { threshold: 0.1 });
+            const pct = 100 * n / (width * height);
+            rows.push(`${s}: ${n}px diff (${pct.toFixed(3)}%)`);
+            if (pct > 0.5) { fails++; fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
+          }
+          await browser.close();
+          console.log('\n' + rows.join('\n'));
+          if (fails) { console.error(`\n${fails} screen(s) differ from source`); process.exit(1); }
+          console.log('\nvisual match ✓ — deployed == source');
+          EOF
+          node /tmp/vcheck.mjs
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: diff/
 
       - name: Summary
         run: |
