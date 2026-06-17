@@ -73,6 +73,18 @@ jobs:
           git commit -q -m "build: design site from ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" design
 
+      - name: Verify live (design.bumpt.io)
+        run: |
+          for i in 1 2 3 4 5 6; do
+            read code sv < <(curl -sS -m 15 -o /dev/null -w '%{http_code} %{ssl_verify_result}' https://design.bumpt.io 2>/dev/null || echo "000 1")
+            echo "attempt $i: https://design.bumpt.io -> HTTP $code (ssl_verify=$sv)"
+            [ "$code" = "200" ] && [ "$sv" = "0" ] && { echo "live ✓"; break; }
+            sleep 8
+          done
+          h=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' https://design.bumpt.io/home/ 2>/dev/null || echo 000)
+          echo "https://design.bumpt.io/home/ -> HTTP $h"
+          [ "$code" = "200" ] || echo "::warning::design.bumpt.io not 200 yet (cert may still be issuing)"
+
       - name: Summary
         run: |
           { echo "### design.bumpt.io"; echo ""; echo "- built ${{ github.sha }} → design branch → deployed"; } >> "$GITHUB_STEP_SUMMARY"
