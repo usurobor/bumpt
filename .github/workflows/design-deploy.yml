@@ -1,0 +1,83 @@
+name: Design preview (design.bumpt.io)
+
+# Deploys the static design/ screens to a dedicated Vercel project (bump-design)
+# and attaches design.bumpt.io. Runs from main (where design/ lives); self-triggers
+# on changes to design/ or this file. After the first run, add the printed CNAME
+# at Squarespace (design -> cname.vercel-dns.com) to finish DNS + cert.
+#
+# Required secret: VERCEL_TOKEN   Optional: VERCEL_SCOPE (team slug)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - design/**
+      - .github/workflows/design-deploy.yml
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: design
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SCOPE: ${{ secrets.VERCEL_SCOPE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Preflight
+        run: '[ -n "$VERCEL_TOKEN" ] || { echo "::error::VERCEL_TOKEN secret is not set"; exit 1; }'
+
+      - name: Link / create project (bump-design, root = design)
+        run: vercel link --yes --project bump-design --token "$VERCEL_TOKEN" ${SCOPE:+--scope "$SCOPE"}
+
+      - name: Deploy (static)
+        id: deploy
+        run: |
+          scope_args=(); [ -n "$SCOPE" ] && scope_args=(--scope "$SCOPE")
+          url="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" "${scope_args[@]}")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $url"
+
+      - name: Attach design.bumpt.io + show required DNS
+        run: |
+          auth=(-H "Authorization: Bearer $VERCEL_TOKEN")
+          TID=$(curl -sS "${auth[@]}" https://api.vercel.com/v2/teams | jq -r '.teams[]? | select(.slug=="usurobor-1186s-projects") | .id')
+          q=""; [ -n "$TID" ] && [ "$TID" != "null" ] && q="?teamId=$TID"
+          echo "teamId: ${TID:-<none>}"
+          api(){ curl -sS -w '\n[HTTP %{http_code}]\n' "${auth[@]}" "$@"; }
+          echo "== attach design.bumpt.io to bump-design =="
+          api -X POST "https://api.vercel.com/v10/projects/bump-design/domains$q" \
+            -H "Content-Type: application/json" -d '{"name":"design.bumpt.io"}'
+          echo "== required DNS (recommendedCNAME is what to add at Squarespace) =="
+          curl -sS "${auth[@]}" "https://api.vercel.com/v6/domains/design.bumpt.io/config$q" \
+            | jq '{misconfigured, recommendedCNAME, cnames}' || true
+
+      - name: Probe (will be misconfigured until the CNAME is added)
+        run: |
+          curl -sS -m 15 -o /dev/null -w 'https://design.bumpt.io -> HTTP %{http_code}\n' https://design.bumpt.io \
+            || echo "design.bumpt.io not resolving yet (add the CNAME at Squarespace)"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Design preview"
+            echo ""
+            echo "**Deployment:** ${{ steps.deploy.outputs.url }}"
+            echo ""
+            echo "Next (one DNS record at Squarespace):"
+            echo "- CNAME · host \`design\` · value \`cname.vercel-dns.com\` (or the recommendedCNAME printed above)"
+            echo ""
+            echo "Then https://design.bumpt.io serves design/index.html (cert auto-issues)."
+          } >> "$GITHUB_STEP_SUMMARY"
