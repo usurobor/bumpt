@@ -174,10 +174,8 @@ jobs:
               send "✅ <b>design.bumpt.io</b> deployed — all ${total} screens match their mocks."
             else
               detail=$(jq -r '.failtext // (.failed | join(", "))' diff/result.json)
-              send "❌ <b>design.bumpt.io</b> — $((total - nfail))/${total} ok; ${nfail} failed:
-${detail}
-
-Diffs attached where visual."
+              text=$(printf '%s\n%s\n\n%s' "❌ <b>design.bumpt.io</b> — $((total - nfail))/${total} ok; ${nfail} failed:" "$detail" "Diffs attached where visual.")
+              send "$text"
               pmsg=(); [ -n "$TG_TOPIC" ] && pmsg=(-F message_thread_id="$TG_TOPIC")
               for f in $(jq -r '.failed[]' diff/result.json); do
                 [ -f "diff/$f.png" ] && curl -sS "https://api.telegram.org/bot$TG_TOKEN/sendPhoto" \
