@@ -40,23 +40,27 @@
 
 | Check | Status | How |
 |---|---|---|
-| `bumpt.io/` visually identical to `screens/home/view.html` (≤0.5%) | SEE CI | prod-visual gate |
+| `bumpt.io/` visually identical to `screens/home/view.html` (≤0.5%) | PASS | prod-visual gate: 0.002% (26px / 780×1688) |
 | `/` renders the home screen (dark theme, mark, verbatim copy) | PASS | local build, code review vs mock |
 | Space Grotesk + Space Mono loaded | PASS | layout `<link>` (same href as mock) |
 | `robots: noindex` kept | PASS | layout metadata + robots.ts unchanged |
 | other routes / funnel untouched | PASS | only page.tsx + layout.tsx + ci-deploy.yml changed |
-| CI gate green (typecheck, build, smoke, db-verify) | SEE CI | CI run |
+| CI gate green (typecheck, build, smoke, db-verify) | PASS | run 27665459516 |
 | prod gate permanent (re-verifies every deploy) | PASS | `prod-visual` job on `needs: deploy` |
 | typecheck + build local | PASS | `npm ci && npm run -s typecheck && npm run -s build` |
 
 ## CI
 
-- **Green run:** _TBD — fill after the run goes green_
-- **Prod-gate diff %:** _TBD_
+- **Green run:** https://github.com/usurobor/bumpt/actions/runs/27665459516 (id 27665459516, sha `3544a1a`)
+  - build-test: success (typecheck, build, smoke, db-verify all green)
+  - deploy: success · live-smoke: success · **prod-visual: success** · notify-pre/post: success
+- **Prod-gate diff %:** **0.002%** (26px over 780×1688; threshold 0.5%). Log:
+  `home: 26px diff (0.002%) … visual match ✓ — bumpt.io/ == screens/home/view.html`.
+  Artifact: `prod-home-diff` (Artifact ID 7685968694).
 - Local: `cd experiment && npm ci && npm run -s typecheck && npm run -s build` all pass.
 
 ### Commits on `dev`
-- _TBD — fill after push_
+- `3544a1a` — experiment: build home (/) to match the mock + prod visual gate (issue #6)
 
 ## Remaining
 
