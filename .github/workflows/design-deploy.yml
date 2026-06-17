@@ -115,9 +115,9 @@ jobs:
             }
             const { width, height } = src; const diff = new PNG({ width, height });
             const n = pixelmatch(src.data, dep.data, diff.data, width, height, { threshold: 0.1 });
-            const pct = 100 * n / (width * height);
-            rows.push(`${s}: ${n}px diff (${pct.toFixed(3)}%)`);
-            if (pct > 0.5) { fails++; failed.push(s); fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
+            const pct = 100 * n / (width * height); const pctR = Math.round(pct);
+            rows.push(`${s}: ${pctR}% diff${pct > 1 ? '' : ' — match'}`);
+            if (pct > 1) { fails++; failed.push(s); fs.writeFileSync(`diff/${s}.png`, PNG.sync.write(diff)); }
           }
           await browser.close();
           fs.writeFileSync('diff/result.json', JSON.stringify({ total: screens.length, failed, rows }));
