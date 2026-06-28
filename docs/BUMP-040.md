@@ -1,17 +1,18 @@
 # BUMP-040: Revenue Constitution
 
-> How Bump funds official artifacts without selling membership, standing, or admission.
+> How Bump makes money — a marketplace fee on member goods — without selling membership, standing, or admission, and with the software kept open.
 
-**Status:** Draft v0.1
-**Document role:** Constitutional revenue policy
+**Status:** Draft v0.2
+**Document role:** Constitutional revenue policy (the commerce firewall)
 **Authority:** BUMP-000
-**Governing question:** How can Bump sell official artifacts without turning membership into a sales network?
+**Marketplace mechanism:** [BUMP-070](./BUMP-070.md)
+**Governing question:** How can Bump earn revenue without turning membership into a sales network?
 
 ---
 
 ## 1. Core rule
 
-Bump may sell official artifacts.
+Bump runs a **marketplace** where members sell QR-embedded goods ([BUMP-070](./BUMP-070.md)); Bump-the-company takes a **fee** on those sales. The **software is open source** and is never sold.
 
 Bump may not sell:
 
@@ -29,17 +30,13 @@ Money may fund the system. Money may not change a member's standing in the syste
 
 ## 2. Free member surface
 
-Every member gets a free way to use their Bump QR.
-
-Official shirts, tags, stickers, pins, and other artifacts are optional. Buying an artifact is a way to wear or support Bump. It is not required for membership.
+Every member gets a free way to use their Bump QR. Selling or buying goods is optional; **buying is never required for membership** (BUMP-070 §4).
 
 ---
 
 ## 3. No money for admission
 
-Sponsors receive accountability, not commission.
-
-No member is paid for admitting another member. No sponsor lineage participates in revenue.
+Sponsors receive accountability, not commission. No member is paid for admitting another member; no sponsor lineage participates in revenue.
 
 Bump may not use referral codes, affiliate links, discounts, commissions, bonuses, or revenue shares tied to admission, sponsorship, downstream purchases, or sponsor lineage.
 
@@ -47,7 +44,7 @@ Bump may not use referral codes, affiliate links, discounts, commissions, bonuse
 
 ## 4. No purchase advantage
 
-Buying an artifact does not:
+Buying anything does not:
 
 - create membership
 - improve standing
@@ -55,47 +52,30 @@ Buying an artifact does not:
 - change visibility
 - improve placement
 - create governance rights
-- create a claim on future surplus
+- create a claim on Bump's revenue
 
-A purchase is a purchase. It is not an investment, credential, vote, boost, or admission path.
+A purchase is a purchase. It is not an investment, credential, vote, boost, or admission path. **Selling volume confers no standing.**
 
 ---
 
-## 5. Commons surplus
+## 5. Revenue
 
-Artifact revenue is accounted for as:
+Company revenue is a transparent **marketplace fee** on sales:
 
 ```text
-  gross artifact revenue
-- direct production costs
+  marketplace sale
+- seller payout
 - payment processing
-- shipping and fulfillment
-- returns and refunds
-- tax or VAT reserves
-- approved operator compensation
-= commons surplus
+- platform fee   →   Bump revenue
 ```
 
-Commons surplus is not distributed through the sponsor graph.
+The **software is open source and never licensed for money** (proposed licence: AGPL-3.0; see the README). Revenue comes from the hosted marketplace service, not from the code.
+
+This replaces the earlier "commons surplus / treasury allocation" model. Revenue funds operations and approved work (§6); specific fees, budgets, and payments require their own decision receipt.
 
 ---
 
-## 6. Commons allocation
-
-Commons surplus may fund:
-
-- access fund
-- local cells and events
-- protocol maintenance
-- safety and moderation
-- manufacturing reserves
-- operating reserves
-
-This document defines allowed uses. Specific budgets, percentages, and payments require their own decision receipt.
-
----
-
-## 7. Operator compensation
+## 6. Operator compensation
 
 Founders, operators, maintainers, designers, moderators, manufacturers, and stewards may be paid for approved work.
 
@@ -115,15 +95,13 @@ Operators may not receive hidden margin, sponsor commission, downstream commissi
 
 ---
 
-## 8. Receipts
+## 7. Receipts
 
-Every artifact batch, cost reimbursement, operator payment, surplus calculation, and treasury allocation produces an inspectable receipt.
-
-Receipts should reveal enough to audit the allocation of money without exposing unnecessary customer or member data.
+Every marketplace batch, fee, cost reimbursement, operator payment, and allocation produces an inspectable receipt. Receipts should reveal enough to audit the flow of money without exposing unnecessary customer or member data.
 
 ---
 
-## 9. Hard prohibitions
+## 8. Hard prohibitions
 
 Bump does not allow:
 
@@ -135,7 +113,8 @@ Bump does not allow:
 - downstream commissions
 - rank-based payouts
 - purchase-based governance rights
-- artifact purchases required for membership
-- claims on future surplus from buying artifacts
+- purchases required for membership
+- claims on Bump's revenue from buying goods
+- selling the software for money
 
 These prohibitions apply to founders, operators, sponsors, members, cells, and future implementations.

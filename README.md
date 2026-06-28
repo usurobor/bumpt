@@ -77,7 +77,7 @@ The canonical document stack lives under [`docs/`](./docs/).
 | BUMP-010 | Protocol Spec — Node, Tag, Signal, Receipt, Standing schemas | planned |
 | BUMP-020 | Threat Model — relay, coercion, tag theft, stalking, recovery | planned (pre-launch) |
 | BUMP-030 | Governance Constitution — cells, forks, maintainers, rule changes | planned |
-| [BUMP-040](./docs/BUMP-040.md) | Revenue Constitution — how artifacts fund the commons without selling admission | **Draft v0.1** |
+| [BUMP-040](./docs/BUMP-040.md) | Revenue Constitution — marketplace fee, open-source software, money never buys standing | **Draft v0.2** |
 | [BUMP-050](./docs/BUMP-050.md) | Admission Protocol — ask to bump, accept in person, issue receipt | **Draft v0.1** |
 | [BUMP-060](./docs/BUMP-060.md) | Node Control and Recovery — passkey-first login; email optional, never identity | **Draft v0.1** |
 | [BUMP-070](./docs/BUMP-070.md) | Marketplace — members sell QR-embedded goods; platform fee; software open; buying never buys standing | **Draft v0.1** |
@@ -111,8 +111,9 @@ BUMP-000 §13 and BUMP-100). The intended first proof: in **one city, within six
 100–300 members who all joined by verified in-person bump, wearing tags and publishing signals
 at real events.
 
-This is deliberately **not** venture-scale — one city, slow, dense, real; funded without ads
-and without selling standing (see [BUMP-040](./docs/BUMP-040.md)).
+This is deliberately **not** venture-scale — one city, slow, dense, real; funded by a
+**marketplace fee** on member goods, never by ads or selling standing, with the software kept
+open source (see [BUMP-040](./docs/BUMP-040.md), [BUMP-070](./docs/BUMP-070.md)).
 
 ## Contributing
 
@@ -144,7 +145,9 @@ the load tier your environment supports; don't improvise the order.
 
 ## License & commons
 
-The protocol, schemas, and governance history are intended as a **forkable commons** — public,
-inspectable, and survivable beyond any single operator. Private member data is not part of the
-commons and is not forked by default. The formal license is an open question, tracked in
-BUMP-000; until it's settled, treat this as a public draft for reading and discussion.
+The protocol, schemas, governance history, **and the software** are a **forkable, open-source
+commons** — public, inspectable, and survivable beyond any single operator. Private member data
+is not part of the commons and is not forked by default. The software is open source (proposed
+license: **AGPL-3.0**, so it stays open even when run as a hosted service); the license is being
+finalized. Revenue comes from a **marketplace fee** on member goods, never from the software or
+from selling standing ([BUMP-040](./docs/BUMP-040.md), [BUMP-070](./docs/BUMP-070.md)).
