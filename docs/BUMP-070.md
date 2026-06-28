@@ -51,8 +51,8 @@ no standing. **No one is ever required to buy anything** to join, remain, or ran
 - The software is **open source and never licensed for money.** Proposed licence:
   **AGPL-3.0** — keeps it open even when run as a hosted service (see the README
   licence decision).
-- This **supersedes BUMP-040's "commons surplus / allocation" framing (§5–§6)** for
-  now — revenue is a straightforward marketplace fee. BUMP-040's **prohibitions stand**.
+- This is the revenue model in **BUMP-040 §5**, which replaced the earlier
+  "commons surplus / treasury" framing. BUMP-040's **prohibitions stand**.
 
 ## 6. Invariants preserved (unchanged)
 

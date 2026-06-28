@@ -135,11 +135,11 @@ Claims without receipts may be conversation. They are not protocol evidence.
 
 Bump has no token, paid boost, ad market, internal coin, or tradable reputation unit.
 
-External money may fund external costs: tags, hosting, events, moderation labor, audits, manufacturing, and grants. Money must not buy standing.
+External money may fund external costs: tags, hosting, events, moderation labor, audits, manufacturing, and grants. Bump may also run a marketplace where members sell goods and the company takes a fee on sales ([BUMP-040](./BUMP-040.md), [BUMP-070](./BUMP-070.md)) — that is commerce, not internal currency. Money must not buy standing.
 
 ### 5.7 Forkable commons
 
-Protocol, schemas, client rules, governance history, and constitutional changes are public and forkable.
+Protocol, schemas, client rules, governance history, and constitutional changes are public and forkable. The software implementation is **open source** (proposed licence AGPL-3.0; BUMP-040 §5).
 
 Private user data is not forked by default. The commons is the protocol and governance substrate, not everyone's personal history.
 
@@ -505,7 +505,7 @@ Do not build yet:
 
 - global discovery feed
 - algorithmic recommendations
-- marketplace
+- marketplace of standing or influence (a *goods* marketplace is BUMP-070, a separate commerce layer)
 - token
 - paid boosts
 - remote invite links

@@ -168,7 +168,7 @@ membership becomes a status flex; scanners see too much by default.
 - **Physical admission only** — the only join path is the bump; no remote signup; QR is scan-only.
 - **Consentful visibility** — default static; scanner-class scoping; signals revocable.
 - **Non-transferable standing** — opaque number, membership bound to node keys; recovery ≠ transfer.
-- **No internal currency** — no tokens/ads/boosts; the only money is for physical tags.
+- **No internal currency** — no tokens/ads/boosts; commerce is goods-only via the marketplace (BUMP-040/BUMP-070); money never buys standing.
 - **Receipts as evidence** — admission & tag receipts signed and inspectable.
 - **Forkable commons** — protocol/schemas public; private member data not forked (full forkability post-MVP).
 
