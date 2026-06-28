@@ -80,6 +80,7 @@ The canonical document stack lives under [`docs/`](./docs/).
 | [BUMP-040](./docs/BUMP-040.md) | Revenue Constitution — how artifacts fund the commons without selling admission | **Draft v0.1** |
 | [BUMP-050](./docs/BUMP-050.md) | Admission Protocol — ask to bump, accept in person, issue receipt | **Draft v0.1** |
 | [BUMP-060](./docs/BUMP-060.md) | Node Control and Recovery — passkey-first login; email optional, never identity | **Draft v0.1** |
+| [BUMP-070](./docs/BUMP-070.md) | Marketplace — members sell QR-embedded goods; platform fee; software open; buying never buys standing | **Draft v0.1** |
 | [BUMP-100](./docs/BUMP-100.md) | MVP PRD — the first buildable product slice | **Draft v0.1** |
 | [BUMP-101](./docs/BUMP-101.md) | Stone Techno field experiment — worn-QR pre-MVP test | **Draft v0.1.3** |
 | [BUMP-101-RESULTS](./docs/BUMP-101-RESULTS.md) | Field experiment outcome (pre-registered, filled post-event) | awaiting event |
