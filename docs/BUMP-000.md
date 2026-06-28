@@ -139,7 +139,7 @@ External money may fund external costs: tags, hosting, events, moderation labor,
 
 ### 5.7 Forkable commons
 
-Protocol, schemas, client rules, governance history, and constitutional changes are public and forkable. The software implementation is **open source** (proposed licence AGPL-3.0; BUMP-040 §5).
+Protocol, schemas, client rules, governance history, and constitutional changes are public and forkable. The software implementation is **open source under the GNU AGPL-3.0** (see `LICENSE`; BUMP-040 §5).
 
 Private user data is not forked by default. The commons is the protocol and governance substrate, not everyone's personal history.
 

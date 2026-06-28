@@ -20,7 +20,7 @@
 - Bump-the-company **provides the marketplace and takes a fee** on sales. That is the
   revenue model.
 - The **software is open source** (free as in speech). The fee is for the hosted
-  marketplace service — never a software licence.
+  marketplace service — never a software license.
 
 ## 2. The QR is the through-line
 
@@ -48,9 +48,8 @@ no standing. **No one is ever required to buy anything** to join, remain, or ran
 - Company revenue = a transparent **marketplace fee** on sales.
 - Operators may be paid for approved work; every batch/payment/allocation emits a
   receipt (BUMP-040 §7–§8).
-- The software is **open source and never licensed for money.** Proposed licence:
-  **AGPL-3.0** — keeps it open even when run as a hosted service (see the README
-  licence decision).
+- The software is **open source and never licensed for money** — licensed under the
+  **GNU AGPL-3.0**, which keeps it open even when run as a hosted service (see `LICENSE`).
 - This is the revenue model in **BUMP-040 §5**, which replaced the earlier
   "commons surplus / treasury" framing. BUMP-040's **prohibitions stand**.
 
@@ -67,4 +66,3 @@ no standing. **No one is ever required to buy anything** to join, remain, or ran
 - Seller onboarding: a member becomes a seller (payout, tax/KYC).
 - Physical vs digital goods; fulfillment.
 - Whether a buyer's storefront account relates to a node at all *(lean: fully separate — buying ≠ node)*.
-- Licence ratification (AGPL?) — tracked in the README.

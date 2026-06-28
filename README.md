@@ -146,8 +146,11 @@ the load tier your environment supports; don't improvise the order.
 ## License & commons
 
 The protocol, schemas, governance history, **and the software** are a **forkable, open-source
-commons** — public, inspectable, and survivable beyond any single operator. Private member data
-is not part of the commons and is not forked by default. The software is open source (proposed
-license: **AGPL-3.0**, so it stays open even when run as a hosted service); the license is being
-finalized. Revenue comes from a **marketplace fee** on member goods, never from the software or
-from selling standing ([BUMP-040](./docs/BUMP-040.md), [BUMP-070](./docs/BUMP-070.md)).
+commons** — public, inspectable, and survivable beyond any single operator. The software is
+licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** — see
+[`LICENSE`](./LICENSE) — so it stays open even when run as a hosted service. Private member data
+is not part of the commons and is not forked by default. Revenue comes from a **marketplace fee**
+on member goods, never from the software or from selling standing
+([BUMP-040](./docs/BUMP-040.md), [BUMP-070](./docs/BUMP-070.md)).
+
+Copyright © 2026 the Bump contributors. Licensed under the GNU AGPL-3.0; see [`LICENSE`](./LICENSE).

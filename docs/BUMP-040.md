@@ -69,7 +69,7 @@ Company revenue is a transparent **marketplace fee** on sales:
 - platform fee   →   Bump revenue
 ```
 
-The **software is open source and never licensed for money** (proposed licence: AGPL-3.0; see the README). Revenue comes from the hosted marketplace service, not from the code.
+The **software is open source and never licensed for money** — licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**, so it stays open even when run as a hosted service (see `LICENSE`). Revenue comes from the hosted marketplace service, not from the code.
 
 This replaces the earlier "commons surplus / treasury allocation" model. Revenue funds operations and approved work (§6); specific fees, budgets, and payments require their own decision receipt.
 
